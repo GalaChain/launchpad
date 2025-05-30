@@ -1,0 +1,21 @@
+{
+  "channels": [
+    {
+      "pathFragment": "product",
+      "channelName": "product-channel",
+      "asLocalHost": true,
+      "contracts": [
+        {
+          "pathFragment": "GalaChainToken",
+          "chaincodeName": "basic-product",
+          "contractName": "GalaChainToken"
+        },
+        {
+          "pathFragment": "PublicKeyContract",
+          "chaincodeName": "basic-product",
+          "contractName": "PublicKeyContract"
+        }
+      ]
+    }
+  ]
+}
