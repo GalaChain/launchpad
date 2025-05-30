@@ -1,0 +1,2 @@
+# launchpad
+GalaChain Launchpad Chaincode
