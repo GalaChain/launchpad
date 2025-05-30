@@ -32,7 +32,7 @@ import {
   BigNumberMax,
 } from "../validators";
 import { IsNonZeroBigNumber } from "../validators";
-import { BigNumberProperty, ChainObject, IsUserAlias, TokenBalance, ChainCallDTO, SubmitCallDTO } from "@gala-chain/api";
+import { BigNumberProperty, ChainObject, IsUserAlias, TokenBalance, ChainCallDTO, SubmitCallDTO, UserAlias } from "@gala-chain/api";
 
 export class ReverseBondingCurveConfigurationChainObject extends ChainObject {
   @BigNumberProperty()
@@ -198,6 +198,7 @@ export class TokenExtraFeesDto {
 }
 
 export class ExactTokenQuantityDto extends SubmitCallDTO {
+  // TODO: UserAlias?
   @IsString()
   @IsNotEmpty()
   public vaultAddress: string;
@@ -223,9 +224,9 @@ export class ExactTokenQuantityDto extends SubmitCallDTO {
 }
 
 export class NativeTokenQuantityDto extends SubmitCallDTO {
-  @IsString()
+  @IsUserAlias()
   @IsNotEmpty()
-  public vaultAddress: string;
+  public vaultAddress: UserAlias;
 
   @BigNumberProperty()
   @IsNonZeroBigNumber({ message: "nativeTokenQuanity cannot be zero" })
@@ -240,7 +241,7 @@ export class NativeTokenQuantityDto extends SubmitCallDTO {
   @IsOptional()
   public extraFees?: TokenExtraFeesDto;
 
-  constructor(vaultAddress = "", nativeTokenQuantity: BigNumber = new BigNumber(0)) {
+  constructor(vaultAddress: UserAlias, nativeTokenQuantity: BigNumber = new BigNumber(0)) {
     super();
     this.vaultAddress = vaultAddress;
     this.nativeTokenQuantity = nativeTokenQuantity;
@@ -276,7 +277,8 @@ export class TradeResDto {
   public vaultAddress: string;
 
   @IsNotEmpty()
-  public userAddress: string;
+  @IsUserAlias()
+  public userAddress: UserAlias;
 
   @IsNotEmpty()
   @IsBoolean()
@@ -287,6 +289,7 @@ export class TradeResDto {
 }
 
 export class FetchSaleDto extends ChainCallDTO {
+  // TODO: UserAlias?
   @IsString()
   @IsNotEmpty()
   public vaultAddress: string;
@@ -314,8 +317,8 @@ export class ConfigureLaunchpadFeeAddressDto extends SubmitCallDTO {
   public newPlatformFeeAddress?: string;
 
   @IsOptional()
-  @IsString({ each: true })
-  public newAuthorities?: string[];
+  @IsUserAlias({ each: true })
+  public newAuthorities?: UserAlias[];
 }
 
 export class FinalizeTokenAllocationDto extends SubmitCallDTO {
@@ -332,8 +335,8 @@ export class FinalizeTokenAllocationDto extends SubmitCallDTO {
 
 export class CollectFeeAddressDto extends ChainCallDTO {
   @IsNotEmpty()
-  @IsString()
-  public platformFeeCollectAddress: string;
+  @IsUserAlias()
+  public platformFeeCollectAddress: UserAlias;
 }
 
 export class TradeCalculationResFeesDto {

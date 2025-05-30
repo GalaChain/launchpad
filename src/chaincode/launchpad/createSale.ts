@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 import {
+  asValidUserAlias,
   ConflictError,
   TokenInstanceKey
 } from "@gala-chain/api";
@@ -71,7 +72,7 @@ export async function createSale(
   tokenInstanceKey.instance = new BigNumber(0);
 
   // Validate uniqueness of sale and token
-  const vaultAddress = `service|${tokenInstanceKey.getTokenClassKey().toStringKey()}$launchpad`;
+  const vaultAddress = asValidUserAlias(`service|${tokenInstanceKey.getTokenClassKey().toStringKey()}$launchpad`);
   const key = ctx.stub.createCompositeKey(LaunchpadSale.INDEX_KEY, [vaultAddress]);
   const sale = await getObjectByKey(ctx, LaunchpadSale, key).catch(() => undefined);
   if (sale) {
@@ -121,9 +122,7 @@ export async function createSale(
   await putChainObject(ctx, launchpad);
 
   if (launchpadDetails.preBuyQuantity.isGreaterThan(0)) {
-    const nativeTokenDto = new NativeTokenQuantityDto();
-    nativeTokenDto.nativeTokenQuantity = launchpadDetails.preBuyQuantity;
-    nativeTokenDto.vaultAddress = launchpad.vaultAddress;
+    const nativeTokenDto = new NativeTokenQuantityDto(asValidUserAlias(launchpad.vaultAddress), launchpadDetails.preBuyQuantity);
     const tradeStatus = await buyWithNative(ctx, nativeTokenDto);
     isSaleFinalised = tradeStatus.isFinalized;
   }
