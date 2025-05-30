@@ -25,16 +25,14 @@ import {
   ValidateNested
 } from "class-validator";
 
+// TODO: Move to @gala-chain/api
 import {
   BigNumberIsNotNegative,
   BigNumberLessThanOrEqualOther,
   BigNumberMax,
-  BigNumberProperty
 } from "../validators";
 import { IsNonZeroBigNumber } from "../validators";
-import { ChainObject } from "./ChainObject";
-import { TokenBalance } from "./TokenBalance";
-import { ChainCallDTO } from "./dtos";
+import { BigNumberProperty, ChainObject, IsUserAlias, TokenBalance, ChainCallDTO, SubmitCallDTO } from "@gala-chain/api";
 
 export class ReverseBondingCurveConfigurationChainObject extends ChainObject {
   @BigNumberProperty()
@@ -72,7 +70,7 @@ export class ReverseBondingCurveConfigurationDto extends ChainCallDTO {
   }
 }
 
-export class CreateTokenSaleDTO extends ChainCallDTO {
+export class CreateTokenSaleDTO extends SubmitCallDTO {
   @IsString()
   @IsNotEmpty()
   public tokenName: string;
@@ -199,7 +197,7 @@ export class TokenExtraFeesDto {
   public maxAcceptableReverseBondingCurveFee?: BigNumber;
 }
 
-export class ExactTokenQuantityDto extends ChainCallDTO {
+export class ExactTokenQuantityDto extends SubmitCallDTO {
   @IsString()
   @IsNotEmpty()
   public vaultAddress: string;
@@ -224,7 +222,7 @@ export class ExactTokenQuantityDto extends ChainCallDTO {
   }
 }
 
-export class NativeTokenQuantityDto extends ChainCallDTO {
+export class NativeTokenQuantityDto extends SubmitCallDTO {
   @IsString()
   @IsNotEmpty()
   public vaultAddress: string;
@@ -310,7 +308,7 @@ export class PreMintCalculationDto extends ChainCallDTO {
   }
 }
 
-export class ConfigureLaunchpadFeeAddressDto extends ChainCallDTO {
+export class ConfigureLaunchpadFeeAddressDto extends SubmitCallDTO {
   @IsOptional()
   @IsString()
   public newPlatformFeeAddress?: string;
@@ -320,7 +318,7 @@ export class ConfigureLaunchpadFeeAddressDto extends ChainCallDTO {
   public newAuthorities?: string[];
 }
 
-export class FinalizeTokenAllocationDto extends ChainCallDTO {
+export class FinalizeTokenAllocationDto extends SubmitCallDTO {
   @IsNumber()
   @Min(0)
   @Max(1)

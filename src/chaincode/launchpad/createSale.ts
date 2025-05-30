@@ -14,20 +14,14 @@
  */
 import {
   ConflictError,
-  CreateSaleResDto,
-  CreateTokenSaleDTO,
-  LaunchpadSale,
-  NativeTokenQuantityDto,
-  PreConditionFailedError,
   TokenInstanceKey
 } from "@gala-chain/api";
+import { CreateSaleResDto, CreateTokenSaleDTO, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { BigNumber } from "bignumber.js";
 
-import { mintTokenWithAllowance } from "../mint/index";
-import { createTokenClass, updateTokenClass } from "../token/index";
-import { GalaChainContext } from "../types";
-import { getObjectByKey, putChainObject } from "../utils";
+import { GalaChainContext, mintTokenWithAllowance, createTokenClass, updateTokenClass, getObjectByKey, putChainObject } from "@gala-chain/chaincode";
 import { buyWithNative } from "./buyWithNative";
+import { PreConditionFailedError } from "../../api/utils/error";
 
 BigNumber.config({
   ROUNDING_MODE: BigNumber.ROUND_UP

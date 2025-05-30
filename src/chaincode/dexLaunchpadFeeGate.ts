@@ -12,17 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChainCallDTO } from "@gala-chain/api";
 import { GalaChainContext, galaFeeGate } from "@gala-chain/chaincode";
+import { CreateTokenSaleDTO, ExactTokenQuantityDto, NativeTokenQuantityDto } from "../api/types";
 
-import { AddLiquidityDTO, BurnDto, CollectDto, CreatePoolDto, SwapDto } from "../api";
 
 export enum FeeGateCodes {
-  CreatePool = "CreatePool",
-  AddLiquidity = "AddLiquidity",
-  Swap = "Swap",
-  RemoveLiquidity = "RemoveLiquidity",
-  CollectPositionFees = "CollectPositionFees",
   CreateSale = "CreateSale",
   BuyExactToken = "BuyExactToken",
   SellExactToken = "SellExactToken",
@@ -30,47 +24,22 @@ export enum FeeGateCodes {
   SellWithNative = "SellWithNative"
 }
 
-export async function createPoolFeeGate(ctx: GalaChainContext, dto: CreatePoolDto) {
-  return galaFeeGate(ctx, { feeCode: FeeGateCodes.CreatePool });
-}
-
-export async function addLiquidityFeeGate(ctx: GalaChainContext, dto: AddLiquidityDTO) {
-  return galaFeeGate(ctx, { feeCode: FeeGateCodes.AddLiquidity });
-}
-
-export async function removeLiquidityFeeGate(ctx: GalaChainContext, dto: BurnDto) {
-  return galaFeeGate(ctx, { feeCode: FeeGateCodes.RemoveLiquidity });
-}
-
-export async function swapFeeGate(ctx: GalaChainContext, dto: SwapDto) {
-  return galaFeeGate(ctx, { feeCode: FeeGateCodes.Swap });
-}
-
-export async function collectPositionFeesFeeGate(ctx: GalaChainContext, dto: CollectDto) {
-  return galaFeeGate(ctx, { feeCode: FeeGateCodes.CollectPositionFees });
-}
-
-// Unused?
-export async function createSaleFeeGate(ctx: GalaChainContext, dto: ChainCallDTO) {
+export async function createSaleFeeGate(ctx: GalaChainContext, dto: CreateTokenSaleDTO) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.CreateSale });
 }
 
-// Unused?
-export async function buyExactTokenFeeGate(ctx: GalaChainContext, dto: ChainCallDTO) {
+export async function buyExactTokenFeeGate(ctx: GalaChainContext, dto: ExactTokenQuantityDto) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.BuyExactToken });
 }
 
-// Unused?
-export async function sellExactTokenFeeGate(ctx: GalaChainContext, dto: ChainCallDTO) {
+export async function sellExactTokenFeeGate(ctx: GalaChainContext, dto: ExactTokenQuantityDto) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.SellExactToken });
 }
 
-// Unused?
-export async function buyWithNativeFeeGate(ctx: GalaChainContext, dto: ChainCallDTO) {
+export async function buyWithNativeFeeGate(ctx: GalaChainContext, dto: NativeTokenQuantityDto) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.BuyWithNative });
 }
 
-// Unused?
-export async function sellWithNativeFeeGate(ctx: GalaChainContext, dto: ChainCallDTO) {
+export async function sellWithNativeFeeGate(ctx: GalaChainContext, dto: NativeTokenQuantityDto) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.SellWithNative });
 }

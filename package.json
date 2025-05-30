@@ -26,6 +26,7 @@
     "@gala-chain/api": "2.3.1",
     "@gala-chain/chaincode": "2.3.1",
     "@grpc/grpc-js": "1.10.10",
+    "decimal.js": "^10.5.0",
     "dotenv": "^16.0.1",
     "fabric-contract-api": "2.5.6",
     "fabric-shim": "2.5.6"

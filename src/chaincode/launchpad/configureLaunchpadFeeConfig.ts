@@ -12,17 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ChainError,
-  ConfigureLaunchpadFeeAddressDto,
-  ErrorCode,
-  LaunchpadFeeConfig,
-  UnauthorizedError,
-  ValidationFailedError
-} from "@gala-chain/api";
-
-import { GalaChainContext } from "../types";
-import { getObjectByKey, putChainObject } from "../utils";
+import { ChainError, ErrorCode, UnauthorizedError, ValidationFailedError } from "@gala-chain/api";
+import { ConfigureLaunchpadFeeAddressDto, LaunchpadFeeConfig } from "../../api/types";
+import { GalaChainContext } from "@gala-chain/chaincode";
+import { getObjectByKey, putChainObject } from "@gala-chain/chaincode";
 
 export async function configureLaunchpadFeeAddress(
   ctx: GalaChainContext,

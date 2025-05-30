@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 import {
-  ChainCallDTO,
   ConfigureLaunchpadFeeAddressDto,
   CreateSaleResDto,
   CreateTokenSaleDTO,
@@ -27,7 +26,7 @@ import {
   PreMintCalculationDto,
   TradeCalculationResDto,
   TradeResDto
-} from "@gala-chain/api";
+} from "../api/types";
 
 import { version } from "../../package.json";
 import {
@@ -36,7 +35,7 @@ import {
   createSaleFeeGate,
   sellExactTokenFeeGate,
   sellWithNativeFeeGate
-} from "../fees/dexLaunchpadFeeGate";
+} from "./dexLaunchpadFeeGate";
 import {
   buyExactToken,
   buyWithNative,
@@ -52,10 +51,9 @@ import {
   finalizeTokenAllocation,
   sellExactToken,
   sellWithNative
-} from "../launchpad";
-import { GalaChainContext } from "../types";
-import { GalaContract } from "./GalaContract";
-import { EVALUATE, Evaluate, GalaTransaction, Submit } from "./GalaTransaction";
+} from "./launchpad";
+import { GalaChainContext, GalaContract, EVALUATE, Evaluate, GalaTransaction, Submit } from "@gala-chain/chaincode";
+import { ChainCallDTO } from "@gala-chain/api";
 
 export class LaunchpadContract extends GalaContract {
   constructor() {

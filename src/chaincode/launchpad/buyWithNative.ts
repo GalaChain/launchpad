@@ -16,15 +16,13 @@ import {
   ExactTokenQuantityDto,
   LaunchpadSale,
   NativeTokenQuantityDto,
-  SlippageToleranceExceededError,
   TradeResDto
-} from "@gala-chain/api";
+} from "../../api/types";
 import { BigNumber } from "bignumber.js";
+import { fetchTokenClass, transferToken, GalaChainContext, putChainObject } from "@gala-chain/chaincode";
 
-import { fetchTokenClass } from "../token";
-import { transferToken } from "../transfer";
-import { GalaChainContext } from "../types";
-import { fetchAndValidateSale, putChainObject } from "../utils";
+import { fetchAndValidateSale } from "../utils";
+import { SlippageToleranceExceededError } from "../../api/utils/error";
 import { callMemeTokenOut } from "./callMemeTokenOut";
 import { callNativeTokenIn } from "./callNativeTokenIn";
 import { finalizeSale } from "./finaliseSale";

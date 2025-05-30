@@ -17,11 +17,8 @@ import { Exclude, Type } from "class-transformer";
 import { IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
 
-import { ChainKey } from "../utils";
-import { BigNumberProperty, StringEnumProperty } from "../validators";
-import { ChainObject } from "./ChainObject";
+import { ChainKey, BigNumberProperty, StringEnumProperty, ChainObject, TokenInstanceKey } from "@gala-chain/api";
 import { ReverseBondingCurveConfigurationChainObject } from "./LaunchpadDtos";
-import { TokenInstanceKey } from "./TokenInstance";
 
 export enum SaleStatus {
   ONGOING = "Ongoing",

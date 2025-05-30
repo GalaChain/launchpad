@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { LaunchpadSale, PreMintCalculationDto } from "@gala-chain/api";
+import { LaunchpadSale, PreMintCalculationDto } from "../../api/types";
 import { BigNumber } from "bignumber.js";
 import Decimal from "decimal.js";
 

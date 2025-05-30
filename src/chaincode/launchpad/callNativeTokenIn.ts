@@ -12,11 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ExactTokenQuantityDto } from "@gala-chain/api";
+import { ExactTokenQuantityDto } from "../../api/types";
 import { BigNumber } from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { GalaChainContext } from "../types";
+import { GalaChainContext } from "@gala-chain/chaincode";
 import { fetchAndValidateSale, getBondingConstants } from "../utils";
 
 BigNumber.config({

@@ -16,7 +16,7 @@ import { Exclude, Type } from "class-transformer";
 import { ArrayNotEmpty, IsNotEmpty, IsString } from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
 
-import { ChainObject } from "./ChainObject";
+import { ChainObject } from "@gala-chain/api";
 
 @JSONSchema({
   description: "Defines the platform fee address and authorized owners for modification."

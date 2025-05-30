@@ -12,25 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  AddLiquidityDTO,
-  BurnTokenQuantity,
-  CreatePoolDto,
-  GetAddLiquidityEstimationDto,
-  LaunchpadFinalizeFeeAllocation,
-  LaunchpadSale,
-  PreConditionFailedError
-} from "@gala-chain/api";
+
+// TODO: dependencies on DEX
+import { AddLiquidityDTO, BurnTokenQuantity, CreatePoolDto, GetAddLiquidityEstimationDto, addLiquidity, createPool, getAddLiquidityEstimation, getPoolData, getSlot0 } from "@gala-chain/dex";
+import { generateKeyFromClassKey, sortString } from "@gala-chain/dex";
+
+import { LaunchpadFinalizeFeeAllocation, LaunchpadSale } from "../../api/types";
+import { PreConditionFailedError } from "../../api/utils/error";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { fetchOrCreateBalance } from "../balances";
-import { burnTokens } from "../burns";
-import { addLiquidity, createPool, getAddLiquidityEstimation, getPoolData, getSlot0 } from "../dex";
-import { generateKeyFromClassKey, sortString } from "../dex/dexUtils";
-import { transferToken } from "../transfer";
-import { GalaChainContext } from "../types";
-import { fetchLaunchpadFeeAddress, getBondingConstants, getObjectByKey, putChainObject } from "../utils";
+
+import { fetchOrCreateBalance, burnTokens, transferToken, GalaChainContext, getObjectByKey, putChainObject } from "@gala-chain/chaincode";
+import { fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
 
 export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): Promise<void> {
   const key = ctx.stub.createCompositeKey(LaunchpadFinalizeFeeAllocation.INDEX_KEY, []);

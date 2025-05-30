@@ -16,7 +16,7 @@ import { Exclude } from "class-transformer";
 import { IsNumber, Max, Min } from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
 
-import { ChainObject } from "./ChainObject";
+import { ChainObject } from "@gala-chain/api";
 
 @JSONSchema({
   description: "Defines the platform fee and owner allocation percentages."
