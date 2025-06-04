@@ -12,20 +12,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 // TODO: dependencies on DEX
-import { AddLiquidityDTO, BurnTokenQuantity, CreatePoolDto, GetAddLiquidityEstimationDto, addLiquidity, createPool, getAddLiquidityEstimation, getPoolData, getSlot0 } from "@gala-chain/dex";
+import {
+  GalaChainContext,
+  burnTokens,
+  fetchOrCreateBalance,
+  getObjectByKey,
+  putChainObject,
+  resolveUserAlias,
+  transferToken
+} from "@gala-chain/chaincode";
+import {
+  AddLiquidityDTO,
+  BurnTokenQuantity,
+  CreatePoolDto,
+  GetAddLiquidityEstimationDto,
+  addLiquidity,
+  createPool,
+  getAddLiquidityEstimation,
+  getPoolData,
+  getSlot0
+} from "@gala-chain/dex";
 import { generateKeyFromClassKey, sortString } from "@gala-chain/dex";
-
-import { LaunchpadFinalizeFeeAllocation, LaunchpadSale } from "../../api/types";
-import { PreConditionFailedError } from "../../api/utils/error";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-
-import { fetchOrCreateBalance, burnTokens, transferToken, GalaChainContext, getObjectByKey, putChainObject } from "@gala-chain/chaincode";
+import { LaunchpadFinalizeFeeAllocation, LaunchpadSale } from "../../api/types";
+import { PreConditionFailedError } from "../../api/utils/error";
 import { fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
-import { asValidUserAlias } from "@gala-chain/api";
 
 export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): Promise<void> {
   const key = ctx.stub.createCompositeKey(LaunchpadFinalizeFeeAllocation.INDEX_KEY, []);
@@ -42,32 +56,33 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
+  const vaultAddressAlias = await resolveUserAlias(ctx, sale.vaultAddress);
 
   await transferToken(ctx, {
-    from: asValidUserAlias(sale.vaultAddress),
-    to: asValidUserAlias(sale.saleOwner),
+    from: vaultAddressAlias,
+    to: sale.saleOwner,
     tokenInstanceKey: nativeToken,
     quantity: new BigNumber(sale.nativeTokenQuantity)
       .times(ownerAllocationPercentage)
       .decimalPlaces(8, BigNumber.ROUND_DOWN),
     allowancesToUse: [],
     authorizedOnBehalf: {
-      callingOnBehalf: asValidUserAlias(sale.vaultAddress),
-      callingUser: asValidUserAlias(sale.vaultAddress)
+      callingOnBehalf: vaultAddressAlias,
+      callingUser: vaultAddressAlias
     }
   });
 
   await transferToken(ctx, {
-    from: asValidUserAlias(sale.vaultAddress),
-    to: asValidUserAlias(platformFeeAddressConfiguration.feeAddress),
+    from: vaultAddressAlias,
+    to: platformFeeAddressConfiguration.feeAddress,
     tokenInstanceKey: nativeToken,
     quantity: new BigNumber(sale.nativeTokenQuantity)
       .times(platformFeePercentage)
       .decimalPlaces(8, BigNumber.ROUND_DOWN),
     allowancesToUse: [],
     authorizedOnBehalf: {
-      callingOnBehalf: asValidUserAlias(sale.vaultAddress),
-      callingUser: asValidUserAlias(sale.vaultAddress)
+      callingOnBehalf: vaultAddressAlias,
+      callingUser: vaultAddressAlias
     }
   });
 
@@ -144,31 +159,31 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     amount1.times(0.9999999),
     undefined
   );
-  positionDto.uniqueKey = sale.vaultAddress;
+  positionDto.uniqueKey = sale.vaultAddress.toString();
 
-  await addLiquidity(ctx, positionDto, sale.vaultAddress);
+  await addLiquidity(ctx, positionDto, vaultAddressAlias);
 
   // Burn any extra meme tokens
-  const sellingTokenToBurn = await fetchOrCreateBalance(ctx, asValidUserAlias(sale.vaultAddress), memeToken);
+  const sellingTokenToBurn = await fetchOrCreateBalance(ctx, vaultAddressAlias, memeToken);
   const burnSellingTokenQuantity = new BurnTokenQuantity();
   burnSellingTokenQuantity.tokenInstanceKey = memeToken;
   burnSellingTokenQuantity.quantity = sellingTokenToBurn.getQuantityTotal();
 
   await burnTokens(ctx, {
-    owner: asValidUserAlias(sale.vaultAddress),
+    owner: vaultAddressAlias,
     toBurn: [burnSellingTokenQuantity],
     preValidated: true
   });
 
   // Burn any extra GALA
-  const nativeTokenToBurn = await fetchOrCreateBalance(ctx, asValidUserAlias(sale.vaultAddress), nativeToken);
+  const nativeTokenToBurn = await fetchOrCreateBalance(ctx, vaultAddressAlias, nativeToken);
   const burnNativeTokenQuantity = new BurnTokenQuantity();
   burnNativeTokenQuantity.tokenInstanceKey = nativeToken;
   burnNativeTokenQuantity.quantity = nativeTokenToBurn.getQuantityTotal();
 
   if (burnNativeTokenQuantity.quantity) {
     await burnTokens(ctx, {
-      owner: asValidUserAlias(sale.vaultAddress),
+      owner: vaultAddressAlias,
       toBurn: [burnNativeTokenQuantity],
       preValidated: true
     });

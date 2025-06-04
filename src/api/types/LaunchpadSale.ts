@@ -12,12 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import {
+  BigNumberProperty,
+  ChainKey,
+  ChainObject,
+  IsUserAlias,
+  IsUserRef,
+  StringEnumProperty,
+  TokenInstanceKey,
+  UserAlias,
+  UserRef
+} from "@gala-chain/api";
 import BigNumber from "bignumber.js";
 import { Exclude, Type } from "class-transformer";
 import { IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
 
-import { ChainKey, BigNumberProperty, StringEnumProperty, ChainObject, TokenInstanceKey } from "@gala-chain/api";
 import { ReverseBondingCurveConfigurationChainObject } from "./LaunchpadDtos";
 
 export enum SaleStatus {
@@ -33,9 +43,9 @@ export class LaunchpadSale extends ChainObject {
   static INDEX_KEY = "GCLPS"; //GalaChain LaunchPad Sale
 
   @ChainKey({ position: 0 })
-  @IsString()
+  @IsUserAlias()
   @IsNotEmpty()
-  public vaultAddress: string;
+  public vaultAddress: UserAlias;
 
   @StringEnumProperty(SaleStatus)
   @IsNotEmpty()
@@ -57,9 +67,9 @@ export class LaunchpadSale extends ChainObject {
   @IsNotEmpty()
   public nativeTokenQuantity: string;
 
-  @IsString()
+  @IsUserAlias()
   @IsNotEmpty()
-  public saleOwner: string;
+  public saleOwner: UserAlias;
 
   @BigNumberProperty()
   public basePrice: BigNumber;
@@ -92,10 +102,10 @@ export class LaunchpadSale extends ChainObject {
   public static BASE_PRICE = "16506671506650";
 
   constructor(
-    vaultAddress: string,
+    vaultAddress: UserAlias,
     sellingToken: TokenInstanceKey,
     reverseBondingCurveConfiguration: ReverseBondingCurveConfigurationChainObject | undefined,
-    saleOwner: string
+    saleOwner: UserAlias
   ) {
     super();
 

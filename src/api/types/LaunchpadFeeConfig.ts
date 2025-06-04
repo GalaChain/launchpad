@@ -12,11 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { ChainObject, IsUserAlias, UserAlias } from "@gala-chain/api";
 import { Exclude, Type } from "class-transformer";
 import { ArrayNotEmpty, IsNotEmpty, IsString } from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
-
-import { ChainObject } from "@gala-chain/api";
 
 @JSONSchema({
   description: "Defines the platform fee address and authorized owners for modification."
@@ -26,21 +25,20 @@ export class LaunchpadFeeConfig extends ChainObject {
   public static INDEX_KEY = "GCLFC"; // GalaChain Launchpad Fee Configuration
 
   @IsNotEmpty()
-  @IsString()
-  feeAddress: string;
+  @IsUserAlias()
+  feeAddress: UserAlias;
 
   @ArrayNotEmpty()
-  @IsString({ each: true })
-  @Type(() => String)
-  authorities: string[];
+  @IsUserAlias({ each: true })
+  authorities: UserAlias[];
 
-  constructor(feeAddress: string, authorities: string[]) {
+  constructor(feeAddress: UserAlias, authorities: UserAlias[]) {
     super();
     this.feeAddress = feeAddress;
     this.authorities = authorities;
   }
 
-  public setNewFeeAddress(newfeeAddress: string, newAuthorities: string[]) {
+  public setNewFeeAddress(newfeeAddress: UserAlias, newAuthorities: UserAlias[]) {
     this.feeAddress = newfeeAddress;
     this.authorities = newAuthorities;
   }

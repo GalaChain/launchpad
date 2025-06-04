@@ -19,8 +19,10 @@ import { GalaContract, GalaJSONSerializer } from "@gala-chain/chaincode";
 
 import { GalaChainTokenContract } from "./token";
 import { PublicKeyContract } from "./pk";
+import { LaunchpadContract } from "./chaincode";
 
 export const contracts: { new (): GalaContract }[] = [
+  LaunchpadContract,
   PublicKeyContract,
   GalaChainTokenContract
 ];

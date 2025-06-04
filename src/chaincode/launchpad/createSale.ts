@@ -12,17 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { ConflictError, TokenInstanceKey, asValidUserAlias } from "@gala-chain/api";
 import {
-  asValidUserAlias,
-  ConflictError,
-  TokenInstanceKey
-} from "@gala-chain/api";
-import { CreateSaleResDto, CreateTokenSaleDTO, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
+  GalaChainContext,
+  createTokenClass,
+  getObjectByKey,
+  mintTokenWithAllowance,
+  putChainObject,
+  updateTokenClass
+} from "@gala-chain/chaincode";
 import { BigNumber } from "bignumber.js";
 
-import { GalaChainContext, mintTokenWithAllowance, createTokenClass, updateTokenClass, getObjectByKey, putChainObject } from "@gala-chain/chaincode";
-import { buyWithNative } from "./buyWithNative";
+import { CreateSaleResDto, CreateTokenSaleDTO, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { PreConditionFailedError } from "../../api/utils/error";
+import { buyWithNative } from "./buyWithNative";
 
 BigNumber.config({
   ROUNDING_MODE: BigNumber.ROUND_UP
@@ -72,7 +75,9 @@ export async function createSale(
   tokenInstanceKey.instance = new BigNumber(0);
 
   // Validate uniqueness of sale and token
-  const vaultAddress = asValidUserAlias(`service|${tokenInstanceKey.getTokenClassKey().toStringKey()}$launchpad`);
+  const vaultAddress = asValidUserAlias(
+    `service|${tokenInstanceKey.getTokenClassKey().toStringKey()}$launchpad`
+  );
   const key = ctx.stub.createCompositeKey(LaunchpadSale.INDEX_KEY, [vaultAddress]);
   const sale = await getObjectByKey(ctx, LaunchpadSale, key).catch(() => undefined);
   if (sale) {
@@ -122,7 +127,10 @@ export async function createSale(
   await putChainObject(ctx, launchpad);
 
   if (launchpadDetails.preBuyQuantity.isGreaterThan(0)) {
-    const nativeTokenDto = new NativeTokenQuantityDto(asValidUserAlias(launchpad.vaultAddress), launchpadDetails.preBuyQuantity);
+    const nativeTokenDto = new NativeTokenQuantityDto(
+      asValidUserAlias(launchpad.vaultAddress),
+      launchpadDetails.preBuyQuantity
+    );
     const tradeStatus = await buyWithNative(ctx, nativeTokenDto);
     isSaleFinalised = tradeStatus.isFinalized;
   }

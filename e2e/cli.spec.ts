@@ -20,10 +20,7 @@ it("should expose contract names", async () => {
   // Given
   const cliPath = require.resolve(`../lib/src/cli.js`);
 
-  const expectedContracts = [
-    { contractName: "GalaChainToken" },
-    { contractName: "PublicKeyContract" }
-  ];
+  const expectedContracts = [{ contractName: "GalaChainToken" }, { contractName: "PublicKeyContract" }];
 
   // When
   const response = execSync(`node ${cliPath} get-contract-names`).toString().trim();

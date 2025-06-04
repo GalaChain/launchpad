@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 import { NotFoundError, UnauthorizedError } from "@gala-chain/api";
-import { LaunchpadFeeConfig } from "../../api/types";
 import { GalaChainContext } from "@gala-chain/chaincode";
+
+import { LaunchpadFeeConfig } from "../../api/types";
 import { fetchLaunchpadFeeAddress } from "../utils";
 
 export async function fetchLaunchpadFeeConfig(ctx: GalaChainContext): Promise<LaunchpadFeeConfig> {

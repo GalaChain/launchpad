@@ -13,11 +13,18 @@
  * limitations under the License.
  */
 import { FeeReceiptStatus } from "@gala-chain/api";
-import { LaunchpadFeeConfig, LaunchpadSale } from "../../api/types";
-import { SlippageToleranceExceededError } from "../../api/utils/error";
+import {
+  GalaChainContext,
+  getObjectByKey,
+  transferToken,
+  txUnixTimeToDateIndexKeys,
+  writeChannelPaymentReceipt,
+  writeUserPaymentReceipt
+} from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { writeChannelPaymentReceipt, writeUserPaymentReceipt, transferToken, GalaChainContext, getObjectByKey, txUnixTimeToDateIndexKeys } from "@gala-chain/chaincode";
+import { LaunchpadFeeConfig, LaunchpadSale } from "../../api/types";
+import { SlippageToleranceExceededError } from "../../api/utils/error";
 
 const REVERSE_BONDING_CURVE_FEE_CODE = "LaunchpadReverseBondingCurveFee";
 const NATIVE_TOKEN_DECIMALS = 8;

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 import { GalaChainContext, galaFeeGate } from "@gala-chain/chaincode";
-import { CreateTokenSaleDTO, ExactTokenQuantityDto, NativeTokenQuantityDto } from "../api/types";
 
+import { CreateTokenSaleDTO, ExactTokenQuantityDto, NativeTokenQuantityDto } from "../api/types";
 
 export enum FeeGateCodes {
   CreateSale = "CreateSale",

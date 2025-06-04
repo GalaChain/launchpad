@@ -12,16 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ExactTokenQuantityDto,
-  LaunchpadSale,
-  TradeResDto
-} from "../../api/types";
+import { GalaChainContext, fetchTokenClass, putChainObject, transferToken } from "@gala-chain/chaincode";
 import { BigNumber } from "bignumber.js";
+
+import { ExactTokenQuantityDto, LaunchpadSale, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-
-import { fetchTokenClass, transferToken, GalaChainContext, putChainObject } from "@gala-chain/chaincode";
-
 import { fetchAndValidateSale } from "../utils";
 import { callNativeTokenIn } from "./callNativeTokenIn";
 import { finalizeSale } from "./finaliseSale";

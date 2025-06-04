@@ -12,6 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import {
+  BigNumberProperty,
+  ChainCallDTO,
+  ChainObject,
+  IsUserAlias,
+  SubmitCallDTO,
+  TokenBalance,
+  UserAlias,
+  UserRef
+} from "@gala-chain/api";
 import BigNumber from "bignumber.js";
 import { Type } from "class-transformer";
 import {
@@ -26,13 +36,8 @@ import {
 } from "class-validator";
 
 // TODO: Move to @gala-chain/api
-import {
-  BigNumberIsNotNegative,
-  BigNumberLessThanOrEqualOther,
-  BigNumberMax,
-} from "../validators";
+import { BigNumberIsNotNegative, BigNumberLessThanOrEqualOther, BigNumberMax } from "../validators";
 import { IsNonZeroBigNumber } from "../validators";
-import { BigNumberProperty, ChainObject, IsUserAlias, TokenBalance, ChainCallDTO, SubmitCallDTO, UserAlias } from "@gala-chain/api";
 
 export class ReverseBondingCurveConfigurationChainObject extends ChainObject {
   @BigNumberProperty()
@@ -162,11 +167,13 @@ export class CreateSaleResDto {
   @IsNotEmpty()
   public initialBuyQuantity: string;
 
+  @IsUserAlias()
   @IsNotEmpty()
-  public vaultAddress: string;
+  public vaultAddress: UserAlias;
 
+  @IsUserAlias()
   @IsNotEmpty()
-  public creatorAddress: string;
+  public creatorAddress: UserAlias;
 
   @IsNotEmpty()
   public collection: string;
@@ -198,10 +205,9 @@ export class TokenExtraFeesDto {
 }
 
 export class ExactTokenQuantityDto extends SubmitCallDTO {
-  // TODO: UserAlias?
-  @IsString()
+  @IsUserAlias()
   @IsNotEmpty()
-  public vaultAddress: string;
+  public vaultAddress: UserAlias;
 
   @BigNumberProperty()
   @IsNonZeroBigNumber({ message: "tokenQuantity cannot be zero" })
@@ -216,7 +222,7 @@ export class ExactTokenQuantityDto extends SubmitCallDTO {
   @IsOptional()
   public extraFees?: TokenExtraFeesDto;
 
-  constructor(vaultAddress = "", tokenQuantity: BigNumber = new BigNumber(0)) {
+  constructor(vaultAddress: UserAlias, tokenQuantity: BigNumber = new BigNumber(0)) {
     super();
     this.vaultAddress = vaultAddress;
     this.tokenQuantity = tokenQuantity;
@@ -273,8 +279,9 @@ export class TradeResDto {
   @IsNotEmpty()
   public tradeType: string;
 
+  @IsUserAlias()
   @IsNotEmpty()
-  public vaultAddress: string;
+  public vaultAddress: UserAlias;
 
   @IsNotEmpty()
   @IsUserAlias()
@@ -290,10 +297,10 @@ export class TradeResDto {
 
 export class FetchSaleDto extends ChainCallDTO {
   // TODO: UserAlias?
-  @IsString()
+  @IsUserAlias()
   @IsNotEmpty()
-  public vaultAddress: string;
-  constructor(vaultAddress = "") {
+  public vaultAddress: UserAlias;
+  constructor(vaultAddress: UserAlias) {
     super();
     this.vaultAddress = vaultAddress;
   }

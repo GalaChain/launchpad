@@ -12,11 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FinalizeTokenAllocationDto, LaunchpadFinalizeFeeAllocation } from "../../api/types";
+import { UnauthorizedError } from "@gala-chain/api";
 import { GalaChainContext } from "@gala-chain/chaincode";
 import { getObjectByKey, putChainObject } from "@gala-chain/chaincode";
+
+import { FinalizeTokenAllocationDto, LaunchpadFinalizeFeeAllocation } from "../../api/types";
 import { PreConditionFailedError } from "../../api/utils/error";
-import { UnauthorizedError } from "@gala-chain/api";
 import { fetchLaunchpadFeeAddress } from "../utils";
 
 export async function finalizeTokenAllocation(
