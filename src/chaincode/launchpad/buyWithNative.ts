@@ -48,7 +48,7 @@ export async function buyWithNative(
   ctx: GalaChainContext,
   buyTokenDTO: NativeTokenQuantityDto
 ): Promise<TradeResDto> {
-  let isSaleFinalised = false;
+  let isSaleFinalized = false;
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
   const tokensLeftInVault = new BigNumber(sale.sellingTokenQuantity);
   const callMemeTokenOutResult = await callMemeTokenOut(ctx, buyTokenDTO);
@@ -62,7 +62,7 @@ export async function buyWithNative(
     const nativeTokensrequiredToBuyDto = new ExactTokenQuantityDto(buyTokenDTO.vaultAddress, tokensToBuy);
     const callNativeTokenInResult = await callNativeTokenIn(ctx, nativeTokensrequiredToBuyDto);
     buyTokenDTO.nativeTokenQuantity = new BigNumber(callNativeTokenInResult.calculatedQuantity);
-    isSaleFinalised = true;
+    isSaleFinalized = true;
   }
 
   if (
@@ -70,7 +70,7 @@ export async function buyWithNative(
       .plus(new BigNumber(sale.nativeTokenQuantity))
       .gte(new BigNumber(LaunchpadSale.MARKET_CAP))
   )
-    isSaleFinalised = true;
+    isSaleFinalized = true;
 
   if (buyTokenDTO.expectedToken && buyTokenDTO.expectedToken.comparedTo(tokensToBuy) > 0) {
     throw new SlippageToleranceExceededError(
@@ -95,14 +95,14 @@ export async function buyWithNative(
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: buyTokenDTO.vaultAddress,
-      callingUser: buyTokenDTO.vaultAddress
+      callingUser: ctx.callingUser
     }
   });
 
   sale.buyToken(tokensToBuy, buyTokenDTO.nativeTokenQuantity);
   await putChainObject(ctx, sale);
 
-  if (isSaleFinalised) {
+  if (isSaleFinalized) {
     await finalizeSale(ctx, sale);
   }
 
@@ -114,7 +114,7 @@ export async function buyWithNative(
     tradeType: "Buy",
     vaultAddress: buyTokenDTO.vaultAddress,
     userAddress: ctx.callingUser,
-    isFinalized: isSaleFinalised,
+    isFinalized: isSaleFinalized,
     functionName: "BuyWithNative"
   };
 }

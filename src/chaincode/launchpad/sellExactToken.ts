@@ -101,7 +101,7 @@ export async function sellExactToken(
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: sellTokenDTO.vaultAddress,
-      callingUser: sellTokenDTO.vaultAddress
+      callingUser: ctx.callingUser
     }
   });
 

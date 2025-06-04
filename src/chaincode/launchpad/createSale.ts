@@ -57,7 +57,7 @@ export async function createSale(
   ctx: GalaChainContext,
   launchpadDetails: CreateTokenSaleDTO
 ): Promise<CreateSaleResDto> {
-  let isSaleFinalised = false;
+  let isSaleFinalized = false;
   // Validate input parameters
 
   if (!launchpadDetails.websiteUrl && !launchpadDetails.telegramUrl && !launchpadDetails.twitterUrl) {
@@ -132,7 +132,7 @@ export async function createSale(
       launchpadDetails.preBuyQuantity
     );
     const tradeStatus = await buyWithNative(ctx, nativeTokenDto);
-    isSaleFinalised = tradeStatus.isFinalized;
+    isSaleFinalized = tradeStatus.isFinalized;
   }
 
   // Return the response object
@@ -150,7 +150,7 @@ export async function createSale(
     collection: launchpadDetails.tokenCollection,
     category: launchpadDetails.tokenCategory,
     functionName: "CreateSale",
-    isFinalized: isSaleFinalised,
+    isFinalized: isSaleFinalized,
     tokenStringKey: tokenInstanceKey.getTokenClassKey().toStringKey(),
     reverseBondingCurveConfiguration: launchpadDetails.reverseBondingCurveConfiguration
   } satisfies CreateSaleResDto;

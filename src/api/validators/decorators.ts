@@ -281,9 +281,9 @@ export function IsLessThan(property: string, validationOptions?: ValidationOptio
       constraints: [property],
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: unknown, args: ValidationArguments) {
           const [relatedPropertyName] = args.constraints;
-          const relatedValue = (args.object as any)[relatedPropertyName];
+          const relatedValue = (args.object as Record<string, unknown>)[relatedPropertyName];
           return typeof value === "number" && typeof relatedValue === "number" && value < relatedValue;
         },
         defaultMessage(args: ValidationArguments) {
@@ -303,7 +303,7 @@ export function IsStringRecord(validationOptions?: ValidationOptions) {
       propertyName,
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: unknown) {
           if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
 
           return Object.entries(value).every(
@@ -326,7 +326,7 @@ export function IsStringArrayRecord(validationOptions?: ValidationOptions) {
       propertyName,
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: unknown) {
           if (typeof value !== "object" || value === null || Array.isArray(value)) {
             return false;
           }
@@ -382,9 +382,9 @@ export function BigNumberLessThanOrEqualOther(property: string, validationOption
       constraints: [property],
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: unknown, args: ValidationArguments) {
           const [relatedPropertyName] = args.constraints;
-          const relatedValue = (args.object as any)[relatedPropertyName];
+          const relatedValue = (args.object as Record<string, unknown>)[relatedPropertyName];
           if (!(value instanceof BigNumber) || !(relatedValue instanceof BigNumber)) {
             return false;
           }

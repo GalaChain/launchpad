@@ -91,7 +91,7 @@ export async function sellWithNative(
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: sellTokenDTO.vaultAddress,
-      callingUser: sellTokenDTO.vaultAddress
+      callingUser: ctx.callingUser
     }
   });
 

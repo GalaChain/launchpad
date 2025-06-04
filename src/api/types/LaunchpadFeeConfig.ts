@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 import { ChainObject, IsUserAlias, UserAlias } from "@gala-chain/api";
-import { Exclude, Type } from "class-transformer";
-import { ArrayNotEmpty, IsNotEmpty, IsString } from "class-validator";
+import { Exclude } from "class-transformer";
+import { ArrayNotEmpty, IsNotEmpty } from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
 
 @JSONSchema({

@@ -45,7 +45,7 @@ export async function buyExactToken(
   ctx: GalaChainContext,
   buyTokenDTO: ExactTokenQuantityDto
 ): Promise<TradeResDto> {
-  let isSaleFinalised = false;
+  let isSaleFinalized = false;
 
   // Fetch and validate the sale based on the provided vault address
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
@@ -62,7 +62,7 @@ export async function buyExactToken(
     buyTokenDTO.tokenQuantity = tokenLeftInVault;
     const callNativeTokenInResult2 = await callNativeTokenIn(ctx, buyTokenDTO);
     nativeTokensToBuy = new BigNumber(callNativeTokenInResult2.calculatedQuantity);
-    isSaleFinalised = true;
+    isSaleFinalized = true;
   }
 
   // Check if the native tokens used exceed the market cap, finalizing the sale if true
@@ -71,7 +71,7 @@ export async function buyExactToken(
       .plus(new BigNumber(sale.nativeTokenQuantity))
       .gte(new BigNumber(LaunchpadSale.MARKET_CAP))
   ) {
-    isSaleFinalised = true;
+    isSaleFinalized = true;
   }
 
   // Ensure the expected native token amount is not less than the actual amount required
@@ -100,7 +100,7 @@ export async function buyExactToken(
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: buyTokenDTO.vaultAddress,
-      callingUser: buyTokenDTO.vaultAddress
+      callingUser: ctx.callingUser
     }
   });
 
@@ -109,7 +109,7 @@ export async function buyExactToken(
   await putChainObject(ctx, sale);
 
   // If the sale is finalized, create a V3 pool and add liquidity
-  if (isSaleFinalised) {
+  if (isSaleFinalized) {
     await finalizeSale(ctx, sale);
   }
 
@@ -122,7 +122,7 @@ export async function buyExactToken(
     tradeType: "Buy",
     vaultAddress: buyTokenDTO.vaultAddress,
     userAddress: ctx.callingUser,
-    isFinalized: isSaleFinalised,
+    isFinalized: isSaleFinalized,
     functionName: "BuyExactToken"
   };
 }

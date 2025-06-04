@@ -14,8 +14,6 @@
  */
 import { GalaChainContext, galaFeeGate } from "@gala-chain/chaincode";
 
-import { CreateTokenSaleDTO, ExactTokenQuantityDto, NativeTokenQuantityDto } from "../api/types";
-
 export enum FeeGateCodes {
   CreateSale = "CreateSale",
   BuyExactToken = "BuyExactToken",
@@ -24,22 +22,22 @@ export enum FeeGateCodes {
   SellWithNative = "SellWithNative"
 }
 
-export async function createSaleFeeGate(ctx: GalaChainContext, dto: CreateTokenSaleDTO) {
+export async function createSaleFeeGate(ctx: GalaChainContext) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.CreateSale });
 }
 
-export async function buyExactTokenFeeGate(ctx: GalaChainContext, dto: ExactTokenQuantityDto) {
+export async function buyExactTokenFeeGate(ctx: GalaChainContext) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.BuyExactToken });
 }
 
-export async function sellExactTokenFeeGate(ctx: GalaChainContext, dto: ExactTokenQuantityDto) {
+export async function sellExactTokenFeeGate(ctx: GalaChainContext) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.SellExactToken });
 }
 
-export async function buyWithNativeFeeGate(ctx: GalaChainContext, dto: NativeTokenQuantityDto) {
+export async function buyWithNativeFeeGate(ctx: GalaChainContext) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.BuyWithNative });
 }
 
-export async function sellWithNativeFeeGate(ctx: GalaChainContext, dto: NativeTokenQuantityDto) {
+export async function sellWithNativeFeeGate(ctx: GalaChainContext) {
   return galaFeeGate(ctx, { feeCode: FeeGateCodes.SellWithNative });
 }

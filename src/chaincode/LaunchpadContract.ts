@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChainCallDTO } from "@gala-chain/api";
 import {
   EVALUATE,
   Evaluate,
@@ -198,19 +197,15 @@ export class LaunchpadContract extends GalaContract {
     in: PreMintCalculationDto,
     out: String
   })
-  public async CalculatePreMintTokens(ctx: GalaChainContext, dto: PreMintCalculationDto): Promise<string> {
+  public async CalculatePreMintTokens(dto: PreMintCalculationDto): Promise<string> {
     return calculatePreMintTokens(dto);
   }
 
   @Evaluate({
-    in: ChainCallDTO,
     out: LaunchpadFeeConfig,
     allowedOrgs: ["CuratorOrg"]
   })
-  public async FetchLaunchpadFeeConfig(
-    ctx: GalaChainContext,
-    dto: ChainCallDTO
-  ): Promise<LaunchpadFeeConfig> {
+  public async FetchLaunchpadFeeConfig(ctx: GalaChainContext): Promise<LaunchpadFeeConfig> {
     return fetchLaunchpadFeeConfig(ctx);
   }
 }

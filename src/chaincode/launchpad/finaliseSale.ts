@@ -69,7 +69,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: vaultAddressAlias,
-      callingUser: vaultAddressAlias
+      callingUser: ctx.callingUser
     }
   });
 
@@ -83,7 +83,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: vaultAddressAlias,
-      callingUser: vaultAddressAlias
+      callingUser: ctx.callingUser
     }
   });
 

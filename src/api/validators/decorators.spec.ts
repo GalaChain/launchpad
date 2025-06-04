@@ -133,7 +133,7 @@ describe("BigNumberIsNegative", () => {
 describe("IsStringArrayRecord validator", () => {
   class MockDto {
     @IsStringArrayRecord()
-    data!: any;
+    data!: unknown;
   }
 
   it("should pass for a valid non-empty Record<string, string[]>", async () => {
@@ -206,7 +206,7 @@ describe("IsStringArrayRecord validator", () => {
 describe("IsStringRecord validator", () => {
   class MockDto {
     @IsStringRecord()
-    data!: any;
+    data!: unknown;
   }
 
   it("should pass for a valid non-empty Record<string, string>", async () => {

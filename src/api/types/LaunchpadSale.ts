@@ -17,11 +17,9 @@ import {
   ChainKey,
   ChainObject,
   IsUserAlias,
-  IsUserRef,
   StringEnumProperty,
   TokenInstanceKey,
-  UserAlias,
-  UserRef
+  UserAlias
 } from "@gala-chain/api";
 import BigNumber from "bignumber.js";
 import { Exclude, Type } from "class-transformer";
