@@ -6,9 +6,9 @@
         "asLocalHost": true,
         "contracts": [
           {
-            "pathFragment": "public-key-contract",
+            "pathFragment": "launchpad",
             "chaincodeName": "basic-product",
-            "contractName": "PublicKeyContract"
+            "contractName": "Launchpad"
           }
         ]
       }

@@ -59,9 +59,7 @@ export async function buyWithNative(
 
   if (tokensLeftInVault.comparedTo(tokensToBuy) <= 0) {
     tokensToBuy = tokensLeftInVault;
-    const nativeTokensrequiredToBuyDto = new ExactTokenQuantityDto();
-    nativeTokensrequiredToBuyDto.vaultAddress = buyTokenDTO.vaultAddress;
-    nativeTokensrequiredToBuyDto.tokenQuantity = tokensToBuy;
+    const nativeTokensrequiredToBuyDto = new ExactTokenQuantityDto(buyTokenDTO.vaultAddress, tokensToBuy);
     const callNativeTokenInResult = await callNativeTokenIn(ctx, nativeTokensrequiredToBuyDto);
     buyTokenDTO.nativeTokenQuantity = new BigNumber(callNativeTokenInResult.calculatedQuantity);
     isSaleFinalised = true;

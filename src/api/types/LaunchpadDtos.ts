@@ -320,8 +320,8 @@ export class PreMintCalculationDto extends ChainCallDTO {
 
 export class ConfigureLaunchpadFeeAddressDto extends SubmitCallDTO {
   @IsOptional()
-  @IsString()
-  public newPlatformFeeAddress?: string;
+  @IsUserAlias()
+  public newPlatformFeeAddress?: UserAlias;
 
   @IsOptional()
   @IsUserAlias({ each: true })

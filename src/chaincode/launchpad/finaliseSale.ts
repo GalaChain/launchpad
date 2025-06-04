@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 // TODO: dependencies on DEX
+import { BurnTokenQuantity } from "@gala-chain/api";
 import {
   GalaChainContext,
   burnTokens,
@@ -24,16 +25,16 @@ import {
 } from "@gala-chain/chaincode";
 import {
   AddLiquidityDTO,
-  BurnTokenQuantity,
   CreatePoolDto,
   GetAddLiquidityEstimationDto,
   addLiquidity,
   createPool,
+  generateKeyFromClassKey,
   getAddLiquidityEstimation,
   getPoolData,
-  getSlot0
+  getSlot0,
+  sortString
 } from "@gala-chain/dex";
-import { generateKeyFromClassKey, sortString } from "@gala-chain/dex";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
