@@ -58,7 +58,10 @@ export async function sellExactToken(
 
   if (nativeTokensLeftInVault.comparedTo(nativeTokensToProvide) < 0) {
     nativeTokensToProvide = nativeTokensLeftInVault;
-    const nativeTokensBeingSoldDto = new NativeTokenQuantityDto(sellTokenDTO.vaultAddress, nativeTokensToProvide);
+    const nativeTokensBeingSoldDto = new NativeTokenQuantityDto(
+      sellTokenDTO.vaultAddress,
+      nativeTokensToProvide
+    );
     const callMemeTokenInResult = await callMemeTokenIn(ctx, nativeTokensBeingSoldDto);
     sellTokenDTO.tokenQuantity = new BigNumber(callMemeTokenInResult.calculatedQuantity);
   }
