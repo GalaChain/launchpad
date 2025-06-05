@@ -1,0 +1,17 @@
+{
+    "channels": [
+      {
+        "pathFragment": "product",
+        "channelName": "product-channel",
+        "asLocalHost": true,
+        "contracts": [
+          {
+            "pathFragment": "launchpad",
+            "chaincodeName": "basic-product",
+            "contractName": "Launchpad"
+          }
+        ]
+      }
+    ]
+  }
+  

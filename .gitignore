@@ -1,0 +1,13 @@
+# compiled output
+dist
+tmp
+/out-tsc
+public/
+lib
+keys
+test-network
+logs
+
+# dependencies
+node_modules
+.env
