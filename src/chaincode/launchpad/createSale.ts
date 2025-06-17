@@ -149,6 +149,8 @@ export async function createSale(
     creatorAddress: ctx.callingUser,
     collection: launchpadDetails.tokenCollection,
     category: launchpadDetails.tokenCategory,
+    type: launchpadDetails.tokenSymbol,
+    additionalKey: `${ctx.callingUser.replace(/\|/, ":")}`,
     functionName: "CreateSale",
     isFinalized: isSaleFinalized,
     tokenStringKey: tokenInstanceKey.getTokenClassKey().toStringKey(),
