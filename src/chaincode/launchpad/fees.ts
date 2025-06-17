@@ -103,3 +103,7 @@ export async function payReverseBondingCurveFee(
     authorizedOnBehalf: undefined
   });
 }
+
+export function calculateTransactionFee(tokensBeingTraded: BigNumber, feeAmount?: number) {
+  return tokensBeingTraded.multipliedBy(feeAmount ?? 0).toString();
+}

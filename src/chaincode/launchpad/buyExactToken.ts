@@ -17,7 +17,7 @@ import { BigNumber } from "bignumber.js";
 
 import { ExactTokenQuantityDto, LaunchpadSale, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale } from "../utils";
+import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
 import { callNativeTokenIn } from "./callNativeTokenIn";
 import { finalizeSale } from "./finaliseSale";
 
@@ -53,6 +53,7 @@ export async function buyExactToken(
 
   // Calculate the required amount of native tokens to buy the specified token amount
   const callNativeTokenInResult1 = await callNativeTokenIn(ctx, buyTokenDTO);
+  let transactionFees = callNativeTokenInResult1.extraFees.transactionFees;
   let nativeTokensToBuy = new BigNumber(callNativeTokenInResult1.calculatedQuantity);
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
@@ -62,6 +63,7 @@ export async function buyExactToken(
     buyTokenDTO.tokenQuantity = tokenLeftInVault;
     const callNativeTokenInResult2 = await callNativeTokenIn(ctx, buyTokenDTO);
     nativeTokensToBuy = new BigNumber(callNativeTokenInResult2.calculatedQuantity);
+    transactionFees = callNativeTokenInResult2.extraFees.transactionFees;
     isSaleFinalized = true;
   }
 
@@ -79,6 +81,19 @@ export async function buyExactToken(
     throw new SlippageToleranceExceededError(
       "Gala tokens expected to perform this operation are less than the actual amount required."
     );
+  }
+
+  // Transfer transaction fees
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+  if (launchpadFeeAddressConfiguration && transactionFees) {
+    await transferToken(ctx, {
+      from: ctx.callingUser,
+      to: launchpadFeeAddressConfiguration.feeAddress,
+      tokenInstanceKey: nativeToken,
+      quantity: new BigNumber(transactionFees),
+      allowancesToUse: [],
+      authorizedOnBehalf: undefined
+    });
   }
 
   // Transfer native tokens from the buyer to the vault

@@ -17,7 +17,7 @@ import { BigNumber } from "bignumber.js";
 
 import { ExactTokenQuantityDto, LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale } from "../utils";
+import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
 import { callMemeTokenOut } from "./callMemeTokenOut";
 import { callNativeTokenIn } from "./callNativeTokenIn";
 import { finalizeSale } from "./finaliseSale";
@@ -52,6 +52,7 @@ export async function buyWithNative(
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
   const tokensLeftInVault = new BigNumber(sale.sellingTokenQuantity);
   const callMemeTokenOutResult = await callMemeTokenOut(ctx, buyTokenDTO);
+  let transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
   let tokensToBuy = new BigNumber(callMemeTokenOutResult.calculatedQuantity);
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
@@ -61,6 +62,7 @@ export async function buyWithNative(
     tokensToBuy = tokensLeftInVault;
     const nativeTokensrequiredToBuyDto = new ExactTokenQuantityDto(buyTokenDTO.vaultAddress, tokensToBuy);
     const callNativeTokenInResult = await callNativeTokenIn(ctx, nativeTokensrequiredToBuyDto);
+    transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
     buyTokenDTO.nativeTokenQuantity = new BigNumber(callNativeTokenInResult.calculatedQuantity);
     isSaleFinalized = true;
   }
@@ -76,6 +78,19 @@ export async function buyWithNative(
     throw new SlippageToleranceExceededError(
       "Tokens expected from this operation are more than the the actual amount that will be provided."
     );
+  }
+
+  // Transfer transaction fees
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+  if (launchpadFeeAddressConfiguration && transactionFees) {
+    await transferToken(ctx, {
+      from: ctx.callingUser,
+      to: launchpadFeeAddressConfiguration.feeAddress,
+      tokenInstanceKey: nativeToken,
+      quantity: new BigNumber(transactionFees),
+      allowancesToUse: [],
+      authorizedOnBehalf: undefined
+    });
   }
 
   await transferToken(ctx, {

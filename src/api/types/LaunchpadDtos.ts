@@ -323,6 +323,12 @@ export class ConfigureLaunchpadFeeAddressDto extends SubmitCallDTO {
   public newPlatformFeeAddress?: UserAlias;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  public newFeeAmount?: number;
+
+  @IsOptional()
   @IsUserAlias({ each: true })
   public newAuthorities?: UserAlias[];
 }
@@ -349,6 +355,10 @@ export class TradeCalculationResFeesDto {
   @IsNotEmpty()
   @IsString()
   reverseBondingCurve: string;
+
+  @IsNotEmpty()
+  @IsString()
+  transactionFees: string;
 }
 
 export class TradeCalculationResDto {

@@ -17,7 +17,7 @@ import { BigNumber } from "bignumber.js";
 
 import { NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale } from "../utils";
+import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
 import { callMemeTokenIn } from "./callMemeTokenIn";
 import { payReverseBondingCurveFee } from "./fees";
 
@@ -56,6 +56,7 @@ export async function sellWithNative(
   }
 
   const callMemeTokenInResult = await callMemeTokenIn(ctx, sellTokenDTO);
+  const transactionFees = callMemeTokenInResult.extraFees.transactionFees;
   const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity);
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
@@ -74,6 +75,19 @@ export async function sellWithNative(
     sellTokenDTO.nativeTokenQuantity,
     sellTokenDTO.extraFees?.maxAcceptableReverseBondingCurveFee
   );
+
+  // Transfer transaction fees
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+  if (launchpadFeeAddressConfiguration && transactionFees) {
+    await transferToken(ctx, {
+      from: ctx.callingUser,
+      to: launchpadFeeAddressConfiguration.feeAddress,
+      tokenInstanceKey: nativeToken,
+      quantity: new BigNumber(transactionFees),
+      allowancesToUse: [],
+      authorizedOnBehalf: undefined
+    });
+  }
 
   await transferToken(ctx, {
     from: ctx.callingUser,
