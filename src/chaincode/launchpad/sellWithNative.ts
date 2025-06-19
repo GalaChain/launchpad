@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { ValidationFailedError } from "@gala-chain/api";
 import { GalaChainContext, fetchTokenClass, putChainObject, transferToken } from "@gala-chain/chaincode";
 import { BigNumber } from "bignumber.js";
 
@@ -48,19 +49,25 @@ export async function sellWithNative(
   ctx: GalaChainContext,
   sellTokenDTO: NativeTokenQuantityDto
 ): Promise<TradeResDto> {
+  // Fetch and validate the sale object
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
 
   const nativeTokensLeftInVault = new BigNumber(sale.nativeTokenQuantity);
+
+  // Cap nativeTokenQuantity to the vault balance if the requested amount exceeds it
   if (nativeTokensLeftInVault.comparedTo(sellTokenDTO.nativeTokenQuantity) < 0) {
-    sellTokenDTO.nativeTokenQuantity = nativeTokensLeftInVault;
+    throw new ValidationFailedError("Not enough GALA in sale contract to carry out this operation.");
   }
 
+  // Calculate how many tokens need to be sold to get the requested native amount
   const callMemeTokenInResult = await callMemeTokenIn(ctx, sellTokenDTO);
   const transactionFees = callMemeTokenInResult.extraFees.transactionFees;
   const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity);
+
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
+  // Enforce slippage tolerance
   if (sellTokenDTO.expectedToken && sellTokenDTO.expectedToken.comparedTo(tokensToSell) < 0) {
     throw new SlippageToleranceExceededError(
       "Token amount expected to cost for this operation is less than the the actual amount required."
@@ -76,7 +83,7 @@ export async function sellWithNative(
     sellTokenDTO.extraFees?.maxAcceptableReverseBondingCurveFee
   );
 
-  // Transfer transaction fees
+  // Transfer launchpad transaction fees if applicable
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
   if (launchpadFeeAddressConfiguration && transactionFees) {
     await transferToken(ctx, {
@@ -89,6 +96,7 @@ export async function sellWithNative(
     });
   }
 
+  // Send meme tokens from user to vault
   await transferToken(ctx, {
     from: ctx.callingUser,
     to: sellTokenDTO.vaultAddress,
@@ -97,6 +105,8 @@ export async function sellWithNative(
     allowancesToUse: [],
     authorizedOnBehalf: undefined
   });
+
+  // Send native tokens from vault to user
   await transferToken(ctx, {
     from: sellTokenDTO.vaultAddress,
     to: ctx.callingUser,
@@ -109,6 +119,7 @@ export async function sellWithNative(
     }
   });
 
+  // Update internal sale tracking
   sale.sellToken(tokensToSell, sellTokenDTO.nativeTokenQuantity);
   await putChainObject(ctx, sale);
 
