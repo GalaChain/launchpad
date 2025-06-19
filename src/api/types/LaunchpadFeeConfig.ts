@@ -22,7 +22,7 @@ import { JSONSchema } from "class-validator-jsonschema";
 })
 export class LaunchpadFeeConfig extends ChainObject {
   @Exclude()
-  public static INDEX_KEY = "GCLFC"; // GalaChain Launchpad Fee Configuration
+  public static INDEX_KEY = "GCLPFC"; // GalaChain Launchpad Fee Configuration
 
   @IsNotEmpty()
   @IsUserAlias()
