@@ -46,8 +46,8 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const key = ctx.stub.createCompositeKey(LaunchpadFinalizeFeeAllocation.INDEX_KEY, []);
   const feeAllocation = await getObjectByKey(ctx, LaunchpadFinalizeFeeAllocation, key).catch(() => undefined);
 
-  const platformFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (!platformFeeAddressConfiguration) {
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+  if (!launchpadFeeAddressConfiguration) {
     throw new PreConditionFailedError("Platform fee configuration is yet to be defined.");
   }
 
@@ -75,7 +75,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
 
   await transferToken(ctx, {
     from: vaultAddressAlias,
-    to: platformFeeAddressConfiguration.feeAddress,
+    to: launchpadFeeAddressConfiguration.feeAddress,
     tokenInstanceKey: nativeToken,
     quantity: new BigNumber(sale.nativeTokenQuantity)
       .times(platformFeePercentage)

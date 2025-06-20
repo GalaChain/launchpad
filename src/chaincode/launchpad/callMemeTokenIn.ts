@@ -18,8 +18,8 @@ import { BigNumber } from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
-import { fetchAndValidateSale, getBondingConstants } from "../utils";
-import { calculateReverseBondingCurveFee } from "./fees";
+import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import { calculateReverseBondingCurveFee, calculateTransactionFee } from "./fees";
 
 BigNumber.config({
   ROUNDING_MODE: BigNumber.ROUND_UP
@@ -72,11 +72,16 @@ function calculateMemeTokensRequired(sale: LaunchpadSale, requestedNativeTokenQu
  */
 export async function callMemeTokenIn(ctx: GalaChainContext, sellTokenDTO: NativeTokenQuantityDto) {
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
 
   return {
     calculatedQuantity: calculateMemeTokensRequired(sale, sellTokenDTO.nativeTokenQuantity),
     extraFees: {
-      reverseBondingCurve: calculateReverseBondingCurveFee(sale, sellTokenDTO.nativeTokenQuantity).toString()
+      reverseBondingCurve: calculateReverseBondingCurveFee(sale, sellTokenDTO.nativeTokenQuantity).toString(),
+      transactionFees: calculateTransactionFee(
+        sellTokenDTO.nativeTokenQuantity,
+        launchpadFeeAddressConfiguration?.feeAmount
+      )
     }
   };
 }

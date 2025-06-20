@@ -17,8 +17,8 @@ import { BigNumber } from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { ExactTokenQuantityDto, LaunchpadSale } from "../../api/types";
-import { fetchAndValidateSale, getBondingConstants } from "../utils";
-import { calculateReverseBondingCurveFee } from "./fees";
+import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import { calculateReverseBondingCurveFee, calculateTransactionFee } from "./fees";
 
 BigNumber.config({
   ROUNDING_MODE: BigNumber.ROUND_UP
@@ -72,10 +72,15 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
 export async function callNativeTokenOut(ctx: GalaChainContext, sellTokenDTO: ExactTokenQuantityDto) {
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
   const nativeTokensReceived = calculateNativeTokensReceived(sale, sellTokenDTO.tokenQuantity);
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
   return {
     calculatedQuantity: nativeTokensReceived,
     extraFees: {
-      reverseBondingCurve: calculateReverseBondingCurveFee(sale, BigNumber(nativeTokensReceived)).toString()
+      reverseBondingCurve: calculateReverseBondingCurveFee(sale, BigNumber(nativeTokensReceived)).toString(),
+      transactionFees: calculateTransactionFee(
+        BigNumber(nativeTokensReceived),
+        launchpadFeeAddressConfiguration?.feeAmount
+      )
     }
   };
 }
