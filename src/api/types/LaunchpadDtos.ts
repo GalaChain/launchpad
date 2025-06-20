@@ -270,6 +270,9 @@ export class TradeResDto {
   public inputQuantity: string;
 
   @IsNotEmpty()
+  public totalFees: string;
+
+  @IsNotEmpty()
   public outputQuantity: string;
 
   @IsNotEmpty()

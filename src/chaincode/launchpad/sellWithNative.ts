@@ -126,6 +126,9 @@ export async function sellWithNative(
   const token = await fetchTokenClass(ctx, sale.sellingToken);
   return {
     inputQuantity: tokensToSell.toFixed(),
+    totalFees: new BigNumber(transactionFees)
+      .plus(sellTokenDTO.extraFees?.maxAcceptableReverseBondingCurveFee ?? 0)
+      .toFixed(),
     outputQuantity: sellTokenDTO.nativeTokenQuantity.toFixed(),
     tokenName: token.name,
     tradeType: "Sell",

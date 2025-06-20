@@ -132,6 +132,7 @@ export async function buyExactToken(
   const token = await fetchTokenClass(ctx, sale.sellingToken);
   return {
     inputQuantity: nativeTokensToBuy.toFixed(),
+    totalFees: transactionFees,
     outputQuantity: buyTokenDTO.tokenQuantity.toFixed(),
     tokenName: token.name,
     tradeType: "Buy",

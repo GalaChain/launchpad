@@ -56,7 +56,7 @@ export async function payReverseBondingCurveFee(
   nativeTokensToReceive: BigNumber,
   maxAcceptableFee?: BigNumber
 ) {
-  const feeAmount = await calculateReverseBondingCurveFee(sale, nativeTokensToReceive);
+  const feeAmount = calculateReverseBondingCurveFee(sale, nativeTokensToReceive);
 
   if (feeAmount.isZero()) {
     return; // No fee
@@ -105,5 +105,5 @@ export async function payReverseBondingCurveFee(
 }
 
 export function calculateTransactionFee(tokensBeingTraded: BigNumber, feeAmount?: number) {
-  return tokensBeingTraded.multipliedBy(feeAmount ?? 0).toString();
+  return tokensBeingTraded.multipliedBy(feeAmount ?? 0).toFixed(8, BigNumber.ROUND_UP);
 }
