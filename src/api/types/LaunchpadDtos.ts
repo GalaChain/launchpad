@@ -181,6 +181,12 @@ export class CreateSaleResDto {
   public category: string;
 
   @IsNotEmpty()
+  public type: string;
+
+  @IsNotEmpty()
+  public additionalKey: string;
+
+  @IsNotEmpty()
   public functionName: string;
 
   @IsNotEmpty()
