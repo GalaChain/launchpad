@@ -12,21 +12,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { BatchDto, GalaChainResponse, UnauthorizedError } from "@gala-chain/api";
 import {
+  BatchWriteLimitExceededError,
   EVALUATE,
   Evaluate,
   GalaChainContext,
   GalaContract,
   GalaTransaction,
-  Submit
+  Submit,
+  getApiMethod
 } from "@gala-chain/chaincode";
 
 import { version } from "../../package.json";
 import {
+  AuthorizeBatchSubmitterDto,
+  BatchSubmitAuthoritiesResDto,
   ConfigureLaunchpadFeeAddressDto,
   CreateSaleResDto,
   CreateTokenSaleDTO,
+  DeauthorizeBatchSubmitterDto,
   ExactTokenQuantityDto,
+  FetchBatchSubmitAuthoritiesDto,
   FetchSaleDto,
   FinalizeTokenAllocationDto,
   LaunchpadFeeConfig,
@@ -45,6 +52,7 @@ import {
   sellWithNativeFeeGate
 } from "./dexLaunchpadFeeGate";
 import {
+  authorizeLaunchpadBatchSubmitter,
   buyExactToken,
   buyWithNative,
   calculatePreMintTokens,
@@ -54,9 +62,12 @@ import {
   callNativeTokenOut,
   configureLaunchpadFeeAddress,
   createSale,
+  deauthorizeLaunchpadBatchSubmitter,
+  fetchLaunchpadBatchSubmitAuthorities,
   fetchLaunchpadFeeConfig,
   fetchSaleDetails,
   finalizeTokenAllocation,
+  getLaunchpadBatchSubmitAuthorities,
   sellExactToken,
   sellWithNative
 } from "./launchpad";
@@ -207,5 +218,89 @@ export class LaunchpadContract extends GalaContract {
   })
   public async FetchLaunchpadFeeConfig(ctx: GalaChainContext): Promise<LaunchpadFeeConfig> {
     return fetchLaunchpadFeeConfig(ctx);
+  }
+
+  public async BatchSubmit(ctx: GalaChainContext, batchDto: BatchDto): Promise<GalaChainResponse<unknown>[]> {
+    // Check if the calling user is authorized to submit batches
+    const batchAuthorities = await fetchLaunchpadBatchSubmitAuthorities(ctx);
+    if (!batchAuthorities.isAuthorized(ctx.callingUser)) {
+      throw new UnauthorizedError(
+        `CallingUser ${ctx.callingUser} is not authorized to submit batches. ` +
+          `Authorized users: ${batchAuthorities.getAuthorities().join(", ")}`
+      );
+    }
+
+    const responses: GalaChainResponse<unknown>[] = [];
+
+    const softWritesLimit = batchDto.writesLimit ?? BatchDto.WRITES_DEFAULT_LIMIT;
+    const writesLimit = Math.min(softWritesLimit, BatchDto.WRITES_HARD_LIMIT);
+    let writesCount = ctx.stub.getWritesCount();
+
+    for (const [index, op] of batchDto.operations.entries()) {
+      // Use sandboxed context to avoid flushes of writes and deletes, and populate
+      // the stub with current writes and deletes.
+      const sandboxCtx = ctx.createReadOnlyContext(index);
+      sandboxCtx.stub.setWrites(ctx.stub.getWrites());
+      sandboxCtx.stub.setDeletes(ctx.stub.getDeletes());
+
+      // Execute the operation. Collect both successful and failed responses.
+      let response: GalaChainResponse<unknown>;
+      try {
+        if (writesCount >= writesLimit) {
+          throw new BatchWriteLimitExceededError(writesLimit);
+        }
+
+        const method = getApiMethod(this, op.method, (m) => m.isWrite && m.methodName !== "BatchSubmit");
+        response = await this[method.methodName](sandboxCtx, op.dto);
+      } catch (error) {
+        response = GalaChainResponse.Error(error);
+      }
+      responses.push(response);
+
+      // Update the current context with the writes and deletes if the operation
+      // is successful.
+      if (GalaChainResponse.isSuccess(response)) {
+        ctx.stub.setWrites(sandboxCtx.stub.getWrites());
+        ctx.stub.setDeletes(sandboxCtx.stub.getDeletes());
+        writesCount = ctx.stub.getWritesCount();
+      }
+    }
+    return responses;
+  }
+
+  @Submit({
+    in: AuthorizeBatchSubmitterDto,
+    out: BatchSubmitAuthoritiesResDto,
+    allowedOrgs: [process.env.CURATOR_ORG_MSP ?? "CuratorOrg"]
+  })
+  public async AuthorizeBatchSubmitter(
+    ctx: GalaChainContext,
+    dto: AuthorizeBatchSubmitterDto
+  ): Promise<BatchSubmitAuthoritiesResDto> {
+    return await authorizeLaunchpadBatchSubmitter(ctx, dto);
+  }
+
+  @Submit({
+    in: DeauthorizeBatchSubmitterDto,
+    out: BatchSubmitAuthoritiesResDto,
+    allowedOrgs: [process.env.CURATOR_ORG_MSP ?? "CuratorOrg"]
+  })
+  public async DeauthorizeBatchSubmitter(
+    ctx: GalaChainContext,
+    dto: DeauthorizeBatchSubmitterDto
+  ): Promise<BatchSubmitAuthoritiesResDto> {
+    return await deauthorizeLaunchpadBatchSubmitter(ctx, dto);
+  }
+
+  @GalaTransaction({
+    type: EVALUATE,
+    in: FetchBatchSubmitAuthoritiesDto,
+    out: BatchSubmitAuthoritiesResDto
+  })
+  public async GetBatchSubmitAuthorities(
+    ctx: GalaChainContext,
+    dto: FetchBatchSubmitAuthoritiesDto
+  ): Promise<BatchSubmitAuthoritiesResDto> {
+    return await getLaunchpadBatchSubmitAuthorities(ctx, dto);
   }
 }
