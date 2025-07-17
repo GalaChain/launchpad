@@ -17,7 +17,8 @@ import { BigNumber } from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
-import { fetchAndValidateSale, getBondingConstants } from "../utils";
+import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import { calculateTransactionFee } from "./fees";
 
 BigNumber.config({
   ROUNDING_MODE: BigNumber.ROUND_UP
@@ -71,10 +72,15 @@ export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: Nativ
     roundedResult = new Decimal("1e+7").minus(new Decimal(totalTokensSold));
   }
 
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
   return {
     calculatedQuantity: roundedResult.toFixed(),
     extraFees: {
-      reverseBondingCurve: "0"
+      reverseBondingCurve: "0",
+      transactionFees: calculateTransactionFee(
+        BigNumber(nativeTokens.toFixed()),
+        launchpadFeeAddressConfiguration?.feeAmount
+      )
     }
   };
 }
