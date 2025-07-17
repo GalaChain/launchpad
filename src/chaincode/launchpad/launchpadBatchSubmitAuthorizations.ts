@@ -14,6 +14,7 @@
  */
 import { ChainError } from "@gala-chain/api";
 import { GalaChainContext, getObjectByKey, putChainObject } from "@gala-chain/chaincode";
+
 import {
   AuthorizeBatchSubmitterDto,
   BatchSubmitAuthoritiesResDto,
