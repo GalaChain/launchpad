@@ -113,5 +113,4 @@ export async function buyWithNative(
     isFinalized: isSaleFinalized,
     functionName: "BuyWithNative"
   };
-  
 }
