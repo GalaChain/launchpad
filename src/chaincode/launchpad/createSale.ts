@@ -27,10 +27,6 @@ import { CreateSaleResDto, CreateTokenSaleDTO, LaunchpadSale, NativeTokenQuantit
 import { PreConditionFailedError } from "../../api/utils/error";
 import { buyWithNative } from "./buyWithNative";
 
-BigNumber.config({
-  ROUNDING_MODE: BigNumber.ROUND_UP
-});
-
 /**
  * Creates a new token sale (Launchpad) in the GalaChain environment.
  *
@@ -149,6 +145,8 @@ export async function createSale(
     creatorAddress: ctx.callingUser,
     collection: launchpadDetails.tokenCollection,
     category: launchpadDetails.tokenCategory,
+    type: launchpadDetails.tokenSymbol,
+    additionalKey: `${ctx.callingUser.replace(/\|/, ":")}`,
     functionName: "CreateSale",
     isFinalized: isSaleFinalized,
     tokenStringKey: tokenInstanceKey.getTokenClassKey().toStringKey(),

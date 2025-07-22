@@ -21,10 +21,6 @@ import { fetchAndValidateSale } from "../utils";
 import { callNativeTokenIn } from "./callNativeTokenIn";
 import { finalizeSale } from "./finaliseSale";
 
-BigNumber.config({
-  ROUNDING_MODE: BigNumber.ROUND_UP
-});
-
 /**
  * Executes the purchase of an exact amount of tokens in a token sale.
  *
