@@ -16,7 +16,8 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import Decimal from "decimal.js";
 
 import { ExactTokenQuantityDto } from "../../api/types";
-import { fetchAndValidateSale, getBondingConstants } from "../utils";
+import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import { calculateTransactionFee } from "./fees";
 
 /**
  * Calculates the amount of native tokens required to purchase a specified amount
@@ -57,10 +58,16 @@ export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: Exac
 
   const price = constantFactor.mul(differenceOfExponentials);
 
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+  const roundedPrice = price.toDecimalPlaces(8, Decimal.ROUND_UP).toFixed();
   return {
-    calculatedQuantity: price.toDecimalPlaces(8, Decimal.ROUND_UP).toFixed(),
+    calculatedQuantity: roundedPrice,
     extraFees: {
-      reverseBondingCurve: "0"
+      reverseBondingCurve: "0",
+      transactionFees: calculateTransactionFee(
+        BigNumber(roundedPrice),
+        launchpadFeeAddressConfiguration?.feeAmount
+      )
     }
   };
 }

@@ -24,6 +24,8 @@ import {
 import BigNumber from "bignumber.js";
 import { Type } from "class-transformer";
 import {
+  ArrayNotEmpty,
+  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsNumber,
@@ -276,6 +278,9 @@ export class TradeResDto {
   public inputQuantity: string;
 
   @IsNotEmpty()
+  public totalFees: string;
+
+  @IsNotEmpty()
   public outputQuantity: string;
 
   @IsNotEmpty()
@@ -329,6 +334,12 @@ export class ConfigureLaunchpadFeeAddressDto extends SubmitCallDTO {
   public newPlatformFeeAddress?: UserAlias;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  public newFeeAmount?: number;
+
+  @IsOptional()
   @IsUserAlias({ each: true })
   public newAuthorities?: UserAlias[];
 }
@@ -355,6 +366,10 @@ export class TradeCalculationResFeesDto {
   @IsNotEmpty()
   @IsString()
   reverseBondingCurve: string;
+
+  @IsNotEmpty()
+  @IsString()
+  transactionFees: string;
 }
 
 export class TradeCalculationResDto {
@@ -365,4 +380,27 @@ export class TradeCalculationResDto {
   @ValidateNested({ each: true })
   @Type(() => TradeCalculationResFeesDto)
   public extraFees: TradeCalculationResFeesDto;
+}
+
+export class AuthorizeBatchSubmitterDto extends SubmitCallDTO {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  authorities: string[];
+}
+
+export class DeauthorizeBatchSubmitterDto extends SubmitCallDTO {
+  @IsString()
+  authority: string;
+}
+
+export class FetchBatchSubmitAuthoritiesDto extends ChainCallDTO {
+  // No additional fields needed for fetching all authorities
+}
+
+export class BatchSubmitAuthoritiesResDto extends ChainCallDTO {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  authorities: string[];
 }

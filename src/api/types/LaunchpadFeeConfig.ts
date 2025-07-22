@@ -14,7 +14,7 @@
  */
 import { ChainObject, IsUserAlias, UserAlias } from "@gala-chain/api";
 import { Exclude } from "class-transformer";
-import { ArrayNotEmpty, IsNotEmpty } from "class-validator";
+import { ArrayNotEmpty, IsNotEmpty, IsNumber, Max, Min } from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
 
 @JSONSchema({
@@ -22,24 +22,33 @@ import { JSONSchema } from "class-validator-jsonschema";
 })
 export class LaunchpadFeeConfig extends ChainObject {
   @Exclude()
-  public static INDEX_KEY = "GCLFC"; // GalaChain Launchpad Fee Configuration
+  public static INDEX_KEY = "GCLPFC"; // GalaChain Launchpad Fee Configuration
 
   @IsNotEmpty()
   @IsUserAlias()
   feeAddress: UserAlias;
 
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  public feeAmount: number;
+
   @ArrayNotEmpty()
   @IsUserAlias({ each: true })
   authorities: UserAlias[];
 
-  constructor(feeAddress: UserAlias, authorities: UserAlias[]) {
+  constructor(feeAddress: UserAlias, feeAmount: number, authorities: UserAlias[]) {
     super();
     this.feeAddress = feeAddress;
+    this.feeAmount = feeAmount;
     this.authorities = authorities;
   }
 
-  public setNewFeeAddress(newfeeAddress: UserAlias, newAuthorities: UserAlias[]) {
+  public updateFeeConfig(newfeeAddress: UserAlias, newFeeAmount: number, newAuthorities: UserAlias[]) {
     this.feeAddress = newfeeAddress;
+    this.feeAmount = newFeeAmount;
     this.authorities = newAuthorities;
+    this.validate();
   }
 }
