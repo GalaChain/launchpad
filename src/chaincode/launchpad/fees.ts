@@ -34,7 +34,7 @@ export function calculateReverseBondingCurveFee(sale: LaunchpadSale, nativeToken
     !sale.reverseBondingCurveConfiguration ||
     sale.reverseBondingCurveConfiguration.maxFeePortion.isZero()
   ) {
-    return BigNumber(0);
+    return new BigNumber(0);
   }
 
   const circulatingSupplyProportional = sale.fetchCirculatingSupplyProportional();

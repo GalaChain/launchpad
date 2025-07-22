@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 import { GalaChainContext } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { ExactTokenQuantityDto, LaunchpadSale } from "../../api/types";
@@ -71,7 +71,10 @@ export async function callNativeTokenOut(ctx: GalaChainContext, sellTokenDTO: Ex
   return {
     calculatedQuantity: nativeTokensReceived,
     extraFees: {
-      reverseBondingCurve: calculateReverseBondingCurveFee(sale, BigNumber(nativeTokensReceived)).toString()
+      reverseBondingCurve: calculateReverseBondingCurveFee(
+        sale,
+        new BigNumber(nativeTokensReceived)
+      ).toString()
     }
   };
 }
