@@ -14,7 +14,7 @@
  */
 import { ValidationFailedError } from "@gala-chain/api";
 import { GalaChainContext } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";

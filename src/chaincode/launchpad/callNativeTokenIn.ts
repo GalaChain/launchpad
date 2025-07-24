@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 import { GalaChainContext } from "@gala-chain/chaincode";
+import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { ExactTokenQuantityDto } from "../../api/types";

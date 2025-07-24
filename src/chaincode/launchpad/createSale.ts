@@ -21,7 +21,7 @@ import {
   putChainObject,
   updateTokenClass
 } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 
 import { CreateSaleResDto, CreateTokenSaleDTO, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { PreConditionFailedError } from "../../api/utils/error";
