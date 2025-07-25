@@ -27,7 +27,7 @@ import { ConfigureLaunchpadFeeAddressDto, LaunchpadFeeConfig } from "../../api/t
  *
  * @param ctx - The context object providing access to the GalaChain environment.
  * @param dto - The data transfer object containing the new fee address, fee amount,
- *              animport BigNumber from "bignumber.js";d optional list of new authorities.
+ *              and optional list of new authorities.
  * @returns A promise that resolves to the updated or newly created `LaunchpadFeeConfig` object.
  */
 export async function configureLaunchpadFeeAddress(
