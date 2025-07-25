@@ -14,16 +14,12 @@
  */
 import { ValidationFailedError } from "@gala-chain/api";
 import { GalaChainContext } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
 import { calculateReverseBondingCurveFee, calculateTransactionFee } from "./fees";
-
-BigNumber.config({
-  ROUNDING_MODE: BigNumber.ROUND_UP
-});
 
 function calculateMemeTokensRequired(sale: LaunchpadSale, requestedNativeTokenQuantity: BigNumber) {
   const totalTokensSold = new Decimal(sale.fetchTokensSold()); // current tokens sold / x

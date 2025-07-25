@@ -21,15 +21,11 @@ import {
   putChainObject,
   updateTokenClass
 } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 
 import { CreateSaleResDto, CreateTokenSaleDTO, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { PreConditionFailedError } from "../../api/utils/error";
 import { buyWithNative } from "./buyWithNative";
-
-BigNumber.config({
-  ROUNDING_MODE: BigNumber.ROUND_UP
-});
 
 /**
  * Creates a new token sale (Launchpad) in the GalaChain environment.

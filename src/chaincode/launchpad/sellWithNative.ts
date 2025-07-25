@@ -14,17 +14,13 @@
  */
 import { ValidationFailedError } from "@gala-chain/api";
 import { GalaChainContext, fetchTokenClass, putChainObject, transferToken } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 
 import { NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
 import { callMemeTokenIn } from "./callMemeTokenIn";
 import { payReverseBondingCurveFee } from "./fees";
-
-BigNumber.config({
-  ROUNDING_MODE: BigNumber.ROUND_UP
-});
 
 /**
  * Executes a sale of tokens using native tokens (e.g., GALA) in exchange for the specified token amount.

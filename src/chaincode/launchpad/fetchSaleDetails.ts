@@ -14,13 +14,8 @@
  */
 import { NotFoundError } from "@gala-chain/api";
 import { GalaChainContext, getObjectByKey } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
 
 import { FetchSaleDto, LaunchpadSale } from "../../api/types";
-
-BigNumber.config({
-  ROUNDING_MODE: BigNumber.ROUND_UP
-});
 
 /**
  * Fetches the details of a specific token sale (LaunchpadSale) using its sale address.

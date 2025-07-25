@@ -13,16 +13,12 @@
  * limitations under the License.
  */
 import { GalaChainContext } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
 import { calculateTransactionFee } from "./fees";
-
-BigNumber.config({
-  ROUNDING_MODE: BigNumber.ROUND_UP
-});
 
 /**
  * Calculates the number of tokens that can be purchased using a specified amount

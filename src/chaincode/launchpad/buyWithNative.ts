@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 import { GalaChainContext, fetchTokenClass, putChainObject, transferToken } from "@gala-chain/chaincode";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 
 import { ExactTokenQuantityDto, LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
@@ -21,10 +21,6 @@ import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
 import { callMemeTokenOut } from "./callMemeTokenOut";
 import { callNativeTokenIn } from "./callNativeTokenIn";
 import { finalizeSale } from "./finaliseSale";
-
-BigNumber.config({
-  ROUNDING_MODE: BigNumber.ROUND_UP
-});
 
 /**
  * Executes the purchase of tokens using a specified amount of native tokens.
