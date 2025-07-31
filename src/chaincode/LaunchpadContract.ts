@@ -226,6 +226,7 @@ export class LaunchpadContract extends GalaContract {
     in: BatchDto,
     out: "object",
     description: "Submit a batch of transactions",
+    enforceUniqueKey: true,
     verifySignature: true
   })
   public async BatchSubmit(ctx: GalaChainContext, batchDto: BatchDto): Promise<GalaChainResponse<unknown>[]> {
