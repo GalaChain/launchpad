@@ -20,6 +20,7 @@ import {
   GalaChainContext,
   GalaContract,
   GalaTransaction,
+  SUBMIT,
   Submit,
   getApiMethod
 } from "@gala-chain/chaincode";
@@ -220,6 +221,13 @@ export class LaunchpadContract extends GalaContract {
     return fetchLaunchpadFeeConfig(ctx);
   }
 
+  @GalaTransaction({
+    type: SUBMIT,
+    in: BatchDto,
+    out: "object",
+    description: "Submit a batch of transactions",
+    verifySignature: true
+  })
   public async BatchSubmit(ctx: GalaChainContext, batchDto: BatchDto): Promise<GalaChainResponse<unknown>[]> {
     // Check if the calling user is authorized to submit batches
     const batchAuthorities = await fetchLaunchpadBatchSubmitAuthorities(ctx);
