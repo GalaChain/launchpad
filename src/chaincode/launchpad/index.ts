@@ -20,7 +20,6 @@ export * from "./callNativeTokenIn";
 export * from "./callNativeTokenOut";
 export * from "./createSale";
 export * from "./fetchSaleDetails";
-export * from "./preMintCalculation";
 export * from "./sellExactToken";
 export * from "./finalizeTokenAllocation";
 export * from "./sellWithNative";

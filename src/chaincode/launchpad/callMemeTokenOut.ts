@@ -37,37 +37,47 @@ import { calculateTransactionFee } from "./fees";
  * @throws Error if the calculation results in an invalid state.
  */
 export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: NativeTokenQuantityDto) {
-  const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
-  const totalTokensSold = new Decimal(sale.fetchTokensSold()); // current tokens sold / x
-  let nativeTokens = new Decimal(buyTokenDTO.nativeTokenQuantity.toString()); // native tokens used to buy / y
-  const basePrice = new Decimal(sale.fetchBasePrice()); // base price / a
-  const { exponentFactor, euler, decimals } = getBondingConstants();
+  // Convert input amount to Decimal
+  let nativeTokens = new Decimal(buyTokenDTO.nativeTokenQuantity.toString());
 
-  if (
-    nativeTokens.add(new Decimal(sale.nativeTokenQuantity)).greaterThan(new Decimal(LaunchpadSale.MARKET_CAP))
-  ) {
-    nativeTokens = new Decimal(LaunchpadSale.MARKET_CAP).minus(new Decimal(sale.nativeTokenQuantity));
+  // Initialize total tokens sold
+  let totalTokensSold = new Decimal(0);
+
+  // Fetch sale details and update parameters if this is not a sale premint calculation
+  if (!buyTokenDTO.IsPreMint) {
+    const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
+    totalTokensSold = new Decimal(sale.fetchTokensSold());
+
+    // Enforce market cap limit
+    if (
+      nativeTokens
+        .add(new Decimal(sale.nativeTokenQuantity))
+        .greaterThan(new Decimal(LaunchpadSale.MARKET_CAP))
+    ) {
+      nativeTokens = new Decimal(LaunchpadSale.MARKET_CAP).minus(new Decimal(sale.nativeTokenQuantity));
+    }
   }
 
+  // Load bonding curve constants
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
+  const { exponentFactor, euler, decimals } = getBondingConstants();
+
+  // Apply bonding curve math
   const constant = nativeTokens.mul(exponentFactor).div(basePrice);
-
   const exponent1 = exponentFactor.mul(totalTokensSold).div(decimals);
-
   const eResult1 = euler.pow(exponent1);
-
   const ethScaled = constant.add(eResult1);
-
   const lnEthScaled = ethScaled.ln().mul(decimals);
-
   const lnEthScaledBase = lnEthScaled.div(exponentFactor);
-
   const result = lnEthScaledBase.minus(totalTokensSold);
   let roundedResult = result.toDecimalPlaces(18, Decimal.ROUND_DOWN);
 
+  // Cap total supply to 10 million
   if (roundedResult.add(totalTokensSold).greaterThan(new Decimal("1e+7"))) {
     roundedResult = new Decimal("1e+7").minus(new Decimal(totalTokensSold));
   }
 
+  // Fetch fee configuration and return result
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
   return {
     calculatedQuantity: roundedResult.toFixed(),
