@@ -36,7 +36,6 @@ import {
   ValidateNested
 } from "class-validator";
 
-// TODO: Move to @gala-chain/api
 import { BigNumberIsNotNegative, BigNumberLessThanOrEqualOther, BigNumberMax } from "../validators";
 import { IsNonZeroBigNumber } from "../validators";
 
@@ -254,6 +253,10 @@ export class NativeTokenQuantityDto extends SubmitCallDTO {
   @IsOptional()
   public extraFees?: TokenExtraFeesDto;
 
+  @IsOptional()
+  @IsBoolean()
+  public IsPreMint?: boolean;
+
   constructor(vaultAddress: UserAlias, nativeTokenQuantity: BigNumber = new BigNumber(0)) {
     super();
     this.vaultAddress = vaultAddress;
@@ -306,25 +309,12 @@ export class TradeResDto {
 }
 
 export class FetchSaleDto extends ChainCallDTO {
-  // TODO: UserAlias?
   @IsUserAlias()
   @IsNotEmpty()
   public vaultAddress: UserAlias;
   constructor(vaultAddress: UserAlias) {
     super();
     this.vaultAddress = vaultAddress;
-  }
-}
-
-export class PreMintCalculationDto extends ChainCallDTO {
-  @BigNumberProperty()
-  @IsNonZeroBigNumber()
-  @IsNotEmpty()
-  public nativeTokenQuantity: BigNumber;
-
-  constructor(nativeTokenQuantity: BigNumber = new BigNumber(0)) {
-    super();
-    this.nativeTokenQuantity = nativeTokenQuantity;
   }
 }
 
