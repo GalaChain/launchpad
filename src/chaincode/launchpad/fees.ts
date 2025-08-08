@@ -15,7 +15,6 @@
 import { FeeReceiptStatus } from "@gala-chain/api";
 import {
   GalaChainContext,
-  getObjectByKey,
   transferToken,
   txUnixTimeToDateIndexKeys,
   writeChannelPaymentReceipt,
@@ -23,8 +22,9 @@ import {
 } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { LaunchpadFeeConfig, LaunchpadSale } from "../../api/types";
+import { LaunchpadSale } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
+import { fetchLaunchpadFeeAddress } from "../utils";
 
 const REVERSE_BONDING_CURVE_FEE_CODE = "LaunchpadReverseBondingCurveFee";
 const NATIVE_TOKEN_DECIMALS = 8;
@@ -57,17 +57,16 @@ export async function payReverseBondingCurveFee(
   maxAcceptableFee?: BigNumber
 ) {
   const feeAmount = calculateReverseBondingCurveFee(sale, nativeTokensToReceive);
+  const launchpadConfig = await fetchLaunchpadFeeAddress(ctx);
 
-  if (feeAmount.isZero()) {
-    return; // No fee
+  if (feeAmount.isZero() || !launchpadConfig) {
+    return; // No fee or no launchpad config
   }
 
   if (maxAcceptableFee && feeAmount.isGreaterThan(maxAcceptableFee)) {
     throw new SlippageToleranceExceededError("Fee exceeds maximum acceptable amount");
   }
 
-  const launchpadConfigKey = ctx.stub.createCompositeKey(LaunchpadFeeConfig.INDEX_KEY, []);
-  const launchpadConfig = await getObjectByKey(ctx, LaunchpadFeeConfig, launchpadConfigKey);
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const { year, month, day } = txUnixTimeToDateIndexKeys(ctx.txUnixTime);
   const txId = ctx.stub.getTxID();
