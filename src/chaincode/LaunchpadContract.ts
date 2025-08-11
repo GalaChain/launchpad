@@ -41,7 +41,6 @@ import {
   LaunchpadFinalizeFeeAllocation,
   LaunchpadSale,
   NativeTokenQuantityDto,
-  PreMintCalculationDto,
   TradeCalculationResDto,
   TradeResDto
 } from "../api/types";
@@ -56,7 +55,6 @@ import {
   authorizeLaunchpadBatchSubmitter,
   buyExactToken,
   buyWithNative,
-  calculatePreMintTokens,
   callMemeTokenIn,
   callMemeTokenOut,
   callNativeTokenIn,
@@ -202,15 +200,6 @@ export class LaunchpadContract extends GalaContract {
     dto: NativeTokenQuantityDto
   ): Promise<TradeCalculationResDto> {
     return callMemeTokenIn(ctx, dto);
-  }
-
-  @GalaTransaction({
-    type: EVALUATE,
-    in: PreMintCalculationDto,
-    out: String
-  })
-  public async CalculatePreMintTokens(dto: PreMintCalculationDto): Promise<string> {
-    return calculatePreMintTokens(dto);
   }
 
   @Evaluate({
