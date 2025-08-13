@@ -73,7 +73,9 @@ import {
 
 export class LaunchpadContract extends GalaContract {
   constructor() {
-    super("Launchpad", version);
+    super("Launchpad", version, {
+      allowNonRegisteredUsers: true
+    });
   }
 
   @Submit({
