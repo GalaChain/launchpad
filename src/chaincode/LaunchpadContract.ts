@@ -219,7 +219,7 @@ export class LaunchpadContract extends GalaContract {
     in: ChainCallDTO,
     out: TransactionFeeResDto
   })
-  public async FetchLaunchpadFeeAmount(ctx: GalaChainContext): Promise<number> {
+  public async FetchLaunchpadFeeAmount(ctx: GalaChainContext): Promise<TransactionFeeResDto> {
     return fetchLaunchpadFeeAmount(ctx);
   }
 

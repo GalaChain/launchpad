@@ -14,8 +14,9 @@
  */
 import { ChainCallDTO, GalaChainErrorResponse, NotFoundError } from "@gala-chain/api";
 import { fixture, users } from "@gala-chain/test";
+import { plainToInstance } from "class-transformer";
 
-import { LaunchpadFeeConfig } from "../../api/types";
+import { LaunchpadFeeConfig, TransactionFeeResDto } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 
 describe("fetchLaunchpadFeeAmount", () => {
@@ -36,8 +37,12 @@ describe("fetchLaunchpadFeeAmount", () => {
     //When
     const res = await contract.FetchLaunchpadFeeAmount(ctx);
 
+    const expectedRes = plainToInstance(TransactionFeeResDto, {
+      feeAmount: 0.32
+    });
+
     //Then
-    expect(res.Data).toEqual(0.32);
+    expect(res.Data).toEqual(expectedRes);
   });
 
   it("Should revert when LaunchpadFeeConfig  does not exists", async () => {

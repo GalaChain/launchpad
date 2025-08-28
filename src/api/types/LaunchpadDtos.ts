@@ -395,7 +395,7 @@ export class BatchSubmitAuthoritiesResDto extends ChainCallDTO {
   authorities: string[];
 }
 
-export class TransactionFeeResDto extends ChainCallDTO {
+export class TransactionFeeResDto {
   @IsNumber()
   feeAmount;
 }
