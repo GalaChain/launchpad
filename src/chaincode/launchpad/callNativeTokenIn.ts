@@ -60,6 +60,7 @@ export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: Exac
   const price = constantFactor.mul(differenceOfExponentials);
 
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+
   const roundedPrice = price.toDecimalPlaces(8, Decimal.ROUND_UP).toFixed();
   return {
     calculatedQuantity: roundedPrice,

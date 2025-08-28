@@ -140,8 +140,9 @@ describe("callMemeTokenOut", () => {
 
     // When
     const response = await contract.CallMemeTokenOut(ctx, signedDto);
+    console.log("Response", response);
 
-    // // Then
+    // Then
     expect(response.Data).toMatchObject({
       calculatedQuantity: "458291.30295364487969",
       extraFees: { reverseBondingCurve: "0", transactionFees: "0.00000000" }

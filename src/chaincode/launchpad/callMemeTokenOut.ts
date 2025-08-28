@@ -79,6 +79,7 @@ export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: Nativ
 
   // Fetch fee configuration and return result
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+
   return {
     calculatedQuantity: roundedResult.toFixed(),
     extraFees: {
