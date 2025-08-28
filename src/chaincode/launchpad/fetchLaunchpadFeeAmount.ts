@@ -18,6 +18,13 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import { TransactionFeeResDto } from "../../api/types";
 import { fetchLaunchpadFeeAddress } from "../utils";
 
+/**
+ * @dev The fetchLaunchpadFeeAmount function retrieves the configured fee amount
+ *      for Launchpad transactions. If no fee configuration is found, it throws a NotFoundError.
+ * @param ctx GalaChainContext – The execution context providing access to the GalaChain environment.
+ * @returns TransactionFeeResDto – An object containing:
+ *          - feeAmount – The configured transaction fee amount for Launchpad transactions.
+ */
 export async function fetchLaunchpadFeeAmount(ctx: GalaChainContext): Promise<TransactionFeeResDto> {
   const feeConfig = await fetchLaunchpadFeeAddress(ctx);
 
