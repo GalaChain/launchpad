@@ -69,6 +69,7 @@ export async function callNativeTokenOut(ctx: GalaChainContext, sellTokenDTO: Ex
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
   const nativeTokensReceived = calculateNativeTokensReceived(sale, sellTokenDTO.tokenQuantity);
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+
   return {
     calculatedQuantity: nativeTokensReceived,
     extraFees: {

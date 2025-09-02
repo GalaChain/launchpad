@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BatchDto, GalaChainResponse, UnauthorizedError } from "@gala-chain/api";
+import { BatchDto, ChainCallDTO, GalaChainResponse, UnauthorizedError } from "@gala-chain/api";
 import {
   BatchWriteLimitExceededError,
   EVALUATE,
@@ -42,7 +42,8 @@ import {
   LaunchpadSale,
   NativeTokenQuantityDto,
   TradeCalculationResDto,
-  TradeResDto
+  TradeResDto,
+  TransactionFeeResDto
 } from "../api/types";
 import {
   buyExactTokenFeeGate,
@@ -70,6 +71,7 @@ import {
   sellExactToken,
   sellWithNative
 } from "./launchpad";
+import { fetchLaunchpadFeeAmount } from "./launchpad/fetchLaunchpadFeeAmount";
 
 export class LaunchpadContract extends GalaContract {
   constructor() {
@@ -210,6 +212,15 @@ export class LaunchpadContract extends GalaContract {
   })
   public async FetchLaunchpadFeeConfig(ctx: GalaChainContext): Promise<LaunchpadFeeConfig> {
     return fetchLaunchpadFeeConfig(ctx);
+  }
+
+  @GalaTransaction({
+    type: EVALUATE,
+    in: ChainCallDTO,
+    out: TransactionFeeResDto
+  })
+  public async FetchLaunchpadFeeAmount(ctx: GalaChainContext): Promise<TransactionFeeResDto> {
+    return fetchLaunchpadFeeAmount(ctx);
   }
 
   @GalaTransaction({
