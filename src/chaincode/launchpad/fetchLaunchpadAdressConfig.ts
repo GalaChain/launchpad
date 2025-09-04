@@ -12,13 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { NotFoundError, UnauthorizedError } from "@gala-chain/api";
+import { ChainCallDTO, NotFoundError, UnauthorizedError } from "@gala-chain/api";
 import { GalaChainContext } from "@gala-chain/chaincode";
 
 import { LaunchpadFeeConfig } from "../../api/types";
 import { fetchLaunchpadFeeAddress } from "../utils";
 
-export async function fetchLaunchpadFeeConfig(ctx: GalaChainContext): Promise<LaunchpadFeeConfig> {
+export async function fetchLaunchpadFeeConfig(
+  ctx: GalaChainContext,
+  dto: ChainCallDTO
+): Promise<LaunchpadFeeConfig> {
   const curatorOrgMsp = process.env.CURATOR_ORG_MSP ?? "CuratorOrg";
 
   const platformFeeAddress = await fetchLaunchpadFeeAddress(ctx);

@@ -154,6 +154,7 @@ export async function buyWithNative(
     vaultAddress: buyTokenDTO.vaultAddress,
     userAddress: ctx.callingUser,
     isFinalized: isSaleFinalized,
-    functionName: "BuyWithNative"
+    functionName: "BuyWithNative",
+    uniqueKey: buyTokenDTO.uniqueKey
   };
 }
