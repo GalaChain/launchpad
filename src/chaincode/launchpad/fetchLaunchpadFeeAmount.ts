@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { NotFoundError } from "@gala-chain/api";
+import { ChainCallDTO, NotFoundError } from "@gala-chain/api";
 import { GalaChainContext } from "@gala-chain/chaincode";
 
 import { TransactionFeeResDto } from "../../api/types";
@@ -25,7 +25,10 @@ import { fetchLaunchpadFeeAddress } from "../utils";
  * @returns TransactionFeeResDto – An object containing:
  *          - feeAmount – The configured transaction fee amount for Launchpad transactions.
  */
-export async function fetchLaunchpadFeeAmount(ctx: GalaChainContext): Promise<TransactionFeeResDto> {
+export async function fetchLaunchpadFeeAmount(
+  ctx: GalaChainContext,
+  dto: ChainCallDTO
+): Promise<TransactionFeeResDto> {
   const feeConfig = await fetchLaunchpadFeeAddress(ctx);
 
   if (!feeConfig) {

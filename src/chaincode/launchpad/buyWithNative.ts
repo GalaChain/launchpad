@@ -86,7 +86,7 @@ export async function buyWithNative(
   // Check for slippage condition
   if (buyTokenDTO.expectedToken && buyTokenDTO.expectedToken.comparedTo(tokensToBuy) > 0) {
     throw new SlippageToleranceExceededError(
-      "Tokens expected from this operation are more than the the actual amount that will be provided."
+      "Tokens expected from this operation are more than the actual amount that will be provided."
     );
   }
 
@@ -154,6 +154,7 @@ export async function buyWithNative(
     vaultAddress: buyTokenDTO.vaultAddress,
     userAddress: ctx.callingUser,
     isFinalized: isSaleFinalized,
-    functionName: "BuyWithNative"
+    functionName: "BuyWithNative",
+    uniqueKey: buyTokenDTO.uniqueKey
   };
 }

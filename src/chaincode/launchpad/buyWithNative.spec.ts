@@ -27,7 +27,7 @@ import { currency, fixture, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
-import { LaunchpadFeeConfig, LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
+import { LaunchpadFeeConfig, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
 
@@ -117,7 +117,8 @@ describe("buyWithNative", () => {
     //When
     const buyTokenRes = await contract.BuyWithNative(ctx, dto);
 
-    const expectedRes = plainToInstance(TradeResDto, {
+    //Then
+    expect(buyTokenRes.Data).toMatchObject({
       inputQuantity: "150",
       totalFees: "0.00000000",
       outputQuantity: "2101667.8890651635002",
@@ -129,8 +130,6 @@ describe("buyWithNative", () => {
       functionName: "BuyWithNative"
     });
 
-    //Then
-    expect(buyTokenRes.Data).toEqual(expectedRes);
     expect(buyTokenRes.Data?.inputQuantity).toEqual("150");
     expect(buyTokenRes.Data?.outputQuantity).toEqual("2101667.8890651635002");
   });
@@ -163,7 +162,8 @@ describe("buyWithNative", () => {
     //When
     const buyTokenRes = await contract.BuyWithNative(ctx, dto);
 
-    const expectedRes = plainToInstance(TradeResDto, {
+    //Then
+    expect(buyTokenRes.Data).toMatchObject({
       inputQuantity: "1000",
       totalFees: "320.00000000",
       outputQuantity: "3663321.3628130557168",
@@ -175,8 +175,6 @@ describe("buyWithNative", () => {
       functionName: "BuyWithNative"
     });
 
-    //Then
-    expect(buyTokenRes.Data).toEqual(expectedRes);
     expect(buyTokenRes.Data?.totalFees).toEqual("320.00000000");
     expect(buyTokenRes.Data?.inputQuantity).toEqual("1000");
     expect(buyTokenRes.Data?.outputQuantity).toEqual("3663321.3628130557168");

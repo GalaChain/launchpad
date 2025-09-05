@@ -35,7 +35,7 @@ describe("fetchLaunchpadFeeAmount", () => {
     dto.sign(users.testUser3.privateKey);
 
     //When
-    const res = await contract.FetchLaunchpadFeeAmount(ctx);
+    const res = await contract.FetchLaunchpadFeeAmount(ctx, dto);
 
     const expectedRes = plainToInstance(TransactionFeeResDto, {
       feeAmount: 0.32
@@ -55,7 +55,7 @@ describe("fetchLaunchpadFeeAmount", () => {
     dto.sign(users.testUser3.privateKey);
 
     //When
-    const res = await contract.FetchLaunchpadFeeAmount(ctx);
+    const res = await contract.FetchLaunchpadFeeAmount(ctx, dto);
 
     //Then
     expect(res).toEqual(

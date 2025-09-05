@@ -306,6 +306,9 @@ export class TradeResDto {
 
   @IsNotEmpty()
   public functionName: string;
+
+  @IsString()
+  public uniqueKey: string;
 }
 
 export class FetchSaleDto extends ChainCallDTO {

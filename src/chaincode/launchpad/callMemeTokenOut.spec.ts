@@ -140,7 +140,6 @@ describe("callMemeTokenOut", () => {
 
     // When
     const response = await contract.CallMemeTokenOut(ctx, signedDto);
-    console.log("Response", response);
 
     // Then
     expect(response.Data).toMatchObject({

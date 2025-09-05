@@ -31,8 +31,7 @@ import {
   ExactTokenQuantityDto,
   LaunchpadFeeConfig,
   LaunchpadSale,
-  NativeTokenQuantityDto,
-  TradeResDto
+  NativeTokenQuantityDto
 } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
@@ -122,7 +121,8 @@ describe("buyWithNative", () => {
     //When
     const buyTokenRes = await contract.BuyExactToken(ctx, dto);
 
-    const expectedRes = plainToInstance(TradeResDto, {
+    //Then
+    expect(buyTokenRes.Data).toMatchObject({
       inputQuantity: "0.00825575",
       totalFees: "0.00000000",
       outputQuantity: "500",
@@ -133,9 +133,6 @@ describe("buyWithNative", () => {
       isFinalized: false,
       functionName: "BuyExactToken"
     });
-
-    //Then
-    expect(buyTokenRes.Data).toEqual(expectedRes);
     expect(buyTokenRes.Data?.inputQuantity).toEqual("0.00825575");
     expect(buyTokenRes.Data?.outputQuantity).toEqual("500");
   });
@@ -169,7 +166,8 @@ describe("buyWithNative", () => {
     //When
     const buyTokenRes = await contract.BuyExactToken(ctx, dto);
 
-    const expectedRes = plainToInstance(TradeResDto, {
+    //Then
+    expect(buyTokenRes.Data).toMatchObject({
       inputQuantity: "0.08991559",
       totalFees: "0.02877299",
       outputQuantity: "5430",
@@ -180,9 +178,6 @@ describe("buyWithNative", () => {
       isFinalized: false,
       functionName: "BuyExactToken"
     });
-
-    //Then
-    expect(buyTokenRes.Data).toEqual(expectedRes);
     expect(buyTokenRes.Data?.inputQuantity).toEqual("0.08991559");
     expect(buyTokenRes.Data?.outputQuantity).toEqual("5430");
   });

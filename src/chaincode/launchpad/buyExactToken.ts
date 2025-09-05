@@ -150,6 +150,7 @@ export async function buyExactToken(
     vaultAddress: buyTokenDTO.vaultAddress,
     userAddress: ctx.callingUser,
     isFinalized: isSaleFinalized,
-    functionName: "BuyExactToken"
+    functionName: "BuyExactToken",
+    uniqueKey: buyTokenDTO.uniqueKey
   };
 }
