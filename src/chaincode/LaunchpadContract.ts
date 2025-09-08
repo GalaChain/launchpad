@@ -207,11 +207,15 @@ export class LaunchpadContract extends GalaContract {
   }
 
   @Evaluate({
+    in: ChainCallDTO,
     out: LaunchpadFeeConfig,
     allowedOrgs: ["CuratorOrg"]
   })
-  public async FetchLaunchpadFeeConfig(ctx: GalaChainContext): Promise<LaunchpadFeeConfig> {
-    return fetchLaunchpadFeeConfig(ctx);
+  public async FetchLaunchpadFeeConfig(
+    ctx: GalaChainContext,
+    dto: ChainCallDTO
+  ): Promise<LaunchpadFeeConfig> {
+    return fetchLaunchpadFeeConfig(ctx, dto);
   }
 
   @GalaTransaction({
@@ -219,8 +223,11 @@ export class LaunchpadContract extends GalaContract {
     in: ChainCallDTO,
     out: TransactionFeeResDto
   })
-  public async FetchLaunchpadFeeAmount(ctx: GalaChainContext): Promise<TransactionFeeResDto> {
-    return fetchLaunchpadFeeAmount(ctx);
+  public async FetchLaunchpadFeeAmount(
+    ctx: GalaChainContext,
+    dto: ChainCallDTO
+  ): Promise<TransactionFeeResDto> {
+    return fetchLaunchpadFeeAmount(ctx, dto);
   }
 
   @GalaTransaction({

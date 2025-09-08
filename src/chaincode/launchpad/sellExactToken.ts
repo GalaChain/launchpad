@@ -132,6 +132,7 @@ export async function sellExactToken(
     vaultAddress: sellTokenDTO.vaultAddress,
     userAddress: ctx.callingUser,
     isFinalized: false,
-    functionName: "SellExactToken"
+    functionName: "SellExactToken",
+    uniqueKey: sellTokenDTO.uniqueKey
   };
 }
