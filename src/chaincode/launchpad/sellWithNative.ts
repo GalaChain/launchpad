@@ -131,6 +131,7 @@ export async function sellWithNative(
     vaultAddress: sellTokenDTO.vaultAddress,
     userAddress: ctx.callingUser,
     isFinalized: false,
-    functionName: "SellWithNative"
+    functionName: "SellWithNative",
+    uniqueKey: sellTokenDTO.uniqueKey
   };
 }
