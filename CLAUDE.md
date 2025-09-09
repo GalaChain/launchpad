@@ -61,3 +61,100 @@ The codebase follows a chaincode pattern with clear separation:
 - E2E tests in separate e2e/ directory
 - RBAC (Role-Based Access Control) enabled by default for tests
 - Test environment configured via .dev-env file
+
+## Unit Test Guidelines
+
+### Test Structure Pattern
+Follow this consistent pattern for all unit tests:
+
+```typescript
+describe("Feature Name", () => {
+  // Declare reusable variables at describe block level
+  let contract: LaunchpadContract;
+  let currencyClass: TokenClass;
+  let sale: LaunchpadSale;
+  let userBalance: TokenBalance;
+  // ... other test fixtures
+  
+  beforeEach(() => {
+    // Initialize all reusable variables here
+    contract = new LaunchpadContract();
+    currencyClass = currency.tokenClass();
+    // ... setup test data
+  });
+
+  it("should describe expected behavior", async () => {
+    // Given - Setup test prerequisites
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        sale,
+        userBalance
+        // ... all required chain state
+      );
+
+    const dto = new SomeDto(param1, param2);
+    dto.uniqueKey = randomUniqueKey();
+    dto.sign(users.testUser1.privateKey);
+
+    // When - Execute the contract method
+    const result = await contract.SomeMethod(ctx, dto);
+
+    // Then - Verify expected outcomes
+    expect(result.Status).toBe(1);
+    expect(result.Data?.someProperty).toBe("expectedValue");
+  });
+});
+```
+
+### Key Requirements
+
+1. **Proper Fixture Setup**: Always use `fixture(ContractClass).registeredUsers(...).savedState(...)` to set up blockchain state
+2. **DTO Construction**: Use proper constructors with required parameters - never construct with empty `new Dto()`
+3. **User Alias Format**: Use `asValidUserAlias("client|username")` format for user identifiers
+4. **Signing**: Always call `dto.sign(user.privateKey)` before submitting DTOs
+5. **State Dependencies**: Include ALL required chain objects (token classes, instances, balances, sales) in `.savedState()`
+
+### Common Patterns
+
+#### Balance Setup
+```typescript
+const userBalance = plainToInstance(TokenBalance, {
+  ...currency.tokenBalance(),
+  owner: users.testUser1.identityKey,
+  quantity: new BigNumber("1000")
+});
+```
+
+#### DTO Creation and Signing
+```typescript
+const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("100"));
+dto.expectedNativeToken = new BigNumber("10"); // Optional slippage protection
+dto.uniqueKey = randomUniqueKey();
+dto.sign(users.testUser1.privateKey);
+```
+
+#### Result Validation
+```typescript
+// Test successful operations
+expect(result.Status).toBe(1);
+expect(result.Data?.outputQuantity).toBe("100");
+
+// Test failures
+expect(result.Status).toBe(0);
+expect(result.ErrorKey).toContain("VALIDATION_FAILED");
+expect(result.Message).toContain("expected error text");
+```
+
+### Test Data Management
+- Use helper functions from `src/chaincode/test/` (e.g., `currency`, `launchpadgala`)
+- Create consistent test users via `users.testUser1`, `users.testUser2`, etc.
+- Use `plainToInstance()` to create properly typed test objects
+- Set up complete object graphs - don't leave required properties undefined
+
+### Execution Testing
+- Always execute actual contract methods, not just internal functions
+- Test both success and failure scenarios
+- Verify state changes through result objects and contract responses
+- Use real cryptographic signing and validation flows
