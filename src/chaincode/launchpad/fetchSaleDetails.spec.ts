@@ -12,12 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  TokenInstance,
-  TokenInstanceKey,
-  asValidUserAlias,
-  randomUniqueKey
-} from "@gala-chain/api";
+import { TokenInstance, TokenInstanceKey, asValidUserAlias, randomUniqueKey } from "@gala-chain/api";
 import { fixture, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 
@@ -45,9 +40,7 @@ describe("fetchSaleDetails", () => {
 
   it("should fetch existing sale details successfully", async () => {
     // Given
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(sale);
+    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(sale);
 
     const fetchSaleDto = new FetchSaleDto(vaultAddress);
     fetchSaleDto.uniqueKey = randomUniqueKey();
@@ -67,9 +60,7 @@ describe("fetchSaleDetails", () => {
   it("should handle sale with existing trades", async () => {
     // Given
     sale.buyToken(new BigNumber("100"), new BigNumber("0.01"));
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(sale);
+    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(sale);
 
     const fetchSaleDto = new FetchSaleDto(vaultAddress);
     fetchSaleDto.uniqueKey = randomUniqueKey();
@@ -88,9 +79,7 @@ describe("fetchSaleDetails", () => {
   it("should return sale with correct finalization status", async () => {
     // Given - Create finalized sale
     sale.finalize();
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(sale);
+    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(sale);
 
     const fetchSaleDto = new FetchSaleDto(vaultAddress);
     fetchSaleDto.uniqueKey = randomUniqueKey();

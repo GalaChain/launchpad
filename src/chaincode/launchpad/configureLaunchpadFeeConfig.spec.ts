@@ -156,10 +156,17 @@ describe("configureLaunchpadFeeAddress", () => {
 
   it("should handle multiple authorities in configuration", async () => {
     // Given
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1, users.testUser2, users.testUser3);
+    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(
+      users.testUser1,
+      users.testUser2,
+      users.testUser3
+    );
 
-    const authorities = [users.testUser1.identityKey, users.testUser2.identityKey, users.testUser3.identityKey];
+    const authorities = [
+      users.testUser1.identityKey,
+      users.testUser2.identityKey,
+      users.testUser3.identityKey
+    ];
 
     const configDto = new ConfigureLaunchpadFeeAddressDto(
       asValidUserAlias("client|feeAddress"),

@@ -23,11 +23,9 @@ describe("finalizeTokenAllocation", () => {
   let feeConfig: LaunchpadFeeConfig;
 
   beforeEach(() => {
-    feeConfig = new LaunchpadFeeConfig(
-      asValidUserAlias("client|platformFeeAddress"),
-      new BigNumber("0.01"),
-      [users.testUser1.identityKey]
-    );
+    feeConfig = new LaunchpadFeeConfig(asValidUserAlias("client|platformFeeAddress"), new BigNumber("0.01"), [
+      users.testUser1.identityKey
+    ]);
   });
 
   it("should create new token allocation successfully", async () => {
@@ -36,10 +34,7 @@ describe("finalizeTokenAllocation", () => {
       .registeredUsers(users.testUser1)
       .savedState(feeConfig);
 
-    const finalizeDto = new FinalizeTokenAllocationDto(
-      new BigNumber("0.02"),
-      new BigNumber("0.03")
-    );
+    const finalizeDto = new FinalizeTokenAllocationDto(new BigNumber("0.02"), new BigNumber("0.03"));
     finalizeDto.uniqueKey = randomUniqueKey();
     const signedDto = finalizeDto.signed(users.testUser1.privateKey);
 
@@ -58,20 +53,14 @@ describe("finalizeTokenAllocation", () => {
       .registeredUsers(users.testUser1)
       .savedState(feeConfig);
 
-    const initialDto = new FinalizeTokenAllocationDto(
-      new BigNumber("0.01"),
-      new BigNumber("0.02")
-    );
+    const initialDto = new FinalizeTokenAllocationDto(new BigNumber("0.01"), new BigNumber("0.02"));
     initialDto.uniqueKey = randomUniqueKey();
     const signedInitialDto = initialDto.signed(users.testUser1.privateKey);
 
     await contract.FinalizeTokenAllocation(ctx, signedInitialDto);
 
     // Update with new values
-    const updateDto = new FinalizeTokenAllocationDto(
-      new BigNumber("0.05"),
-      new BigNumber("0.06")
-    );
+    const updateDto = new FinalizeTokenAllocationDto(new BigNumber("0.05"), new BigNumber("0.06"));
     updateDto.uniqueKey = randomUniqueKey();
     const signedUpdateDto = updateDto.signed(users.testUser1.privateKey);
 
@@ -90,10 +79,7 @@ describe("finalizeTokenAllocation", () => {
       .registeredUsers(users.testUser1)
       .savedState(feeConfig);
 
-    const finalizeDto = new FinalizeTokenAllocationDto(
-      new BigNumber("0"),
-      new BigNumber("0")
-    );
+    const finalizeDto = new FinalizeTokenAllocationDto(new BigNumber("0"), new BigNumber("0"));
     finalizeDto.uniqueKey = randomUniqueKey();
     const signedDto = finalizeDto.signed(users.testUser1.privateKey);
 
