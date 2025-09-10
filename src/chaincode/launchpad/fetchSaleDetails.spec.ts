@@ -12,17 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { TokenInstance, TokenInstanceKey, asValidUserAlias, randomUniqueKey } from "@gala-chain/api";
+import { TokenInstance, TokenInstanceKey, UserAlias, asValidUserAlias, randomUniqueKey } from "@gala-chain/api";
 import { fixture, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 
-import { FetchSaleDto, LaunchpadSale } from "../../api/types";
+import { FetchSaleDto, LaunchpadSale, ReverseBondingCurveConfigurationChainObject } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
 
 describe("fetchSaleDetails", () => {
   let launchpadGalaInstance: TokenInstance;
-  let vaultAddress: string;
+  let vaultAddress: UserAlias;
   let sale: LaunchpadSale;
 
   beforeEach(() => {
@@ -53,8 +53,8 @@ describe("fetchSaleDetails", () => {
     // Then
     expect(response.Status).toBe(1);
     expect(response.Data?.vaultAddress).toBe(vaultAddress);
-    expect(response.Data?.creator).toBe(users.testUser1.identityKey);
-    expect(response.Data?.tokenInstanceKey).toEqual(launchpadGalaInstance.instanceKeyObj());
+    expect(response.Data?.saleOwner).toBe(users.testUser1.identityKey);
+    expect(response.Data?.sellingToken).toEqual(launchpadGalaInstance.instanceKeyObj());
   });
 
   it("should handle sale with existing trades", async () => {
@@ -78,7 +78,7 @@ describe("fetchSaleDetails", () => {
 
   it("should return sale with correct finalization status", async () => {
     // Given - Create finalized sale
-    sale.finalize();
+    sale.finalizeSale();
     const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(sale);
 
     const fetchSaleDto = new FetchSaleDto(vaultAddress);
@@ -91,7 +91,7 @@ describe("fetchSaleDetails", () => {
 
     // Then
     expect(response.Status).toBe(1);
-    expect(response.Data?.isFinalized).toBe(true);
+    expect(response.Data?.saleStatus).toBe("Finished");
   });
 
   it("should fetch sale with reverse bonding curve configuration", async () => {
@@ -103,16 +103,19 @@ describe("fetchSaleDetails", () => {
     tokenInstanceKey.additionalKey = "test:key";
     tokenInstanceKey.instance = new BigNumber(0);
 
+    const reverseBondingCurveConfig = new ReverseBondingCurveConfigurationChainObject(
+      new BigNumber(0.02), // minFeePortion
+      new BigNumber(0.05)  // maxFeePortion
+    );
+    
     const saleWithConfig = new LaunchpadSale(
       vaultAddress,
       tokenInstanceKey,
-      { feePercentage: new BigNumber("0.05") },
+      reverseBondingCurveConfig,
       users.testUser1.identityKey
     );
 
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(saleWithConfig);
+    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(saleWithConfig);
 
     const fetchSaleDto = new FetchSaleDto(vaultAddress);
     fetchSaleDto.uniqueKey = randomUniqueKey();
@@ -125,6 +128,6 @@ describe("fetchSaleDetails", () => {
     // Then
     expect(response.Status).toBe(1);
     expect(response.Data?.reverseBondingCurveConfiguration).toBeDefined();
-    expect(response.Data?.reverseBondingCurveConfiguration?.feePercentage.toFixed()).toBe("0.05");
+    expect(response.Data?.reverseBondingCurveConfiguration?.maxFeePortion).toEqual(new BigNumber(0.05));
   });
 });

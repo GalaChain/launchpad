@@ -153,6 +153,51 @@ expect(result.Message).toContain("expected error text");
 - Use `plainToInstance()` to create properly typed test objects
 - Set up complete object graphs - don't leave required properties undefined
 
+### User Authorization in Tests
+The `@gala-chain/test` package provides different user types for different testing scenarios:
+
+- **`users.admin`**: A Curator user with CuratorOrg privileges. Use for testing methods that require organization-level permissions (e.g., `ConfigureLaunchpadFeeAddress`, `FinalizeTokenAllocation`)
+- **`users.testUser1`, `users.testUser2`, etc.**: Normal end users representing typical client interactions. Use for standard trading operations and user-facing functionality
+
+**CuratorOrg Methods**: For methods with `allowedOrgs: ["CuratorOrg"]`, you MUST use the `caClientIdentity` fixture method to set the proper organization context:
+
+```typescript
+const { ctx, contract } = fixture(LaunchpadContract)
+  .caClientIdentity("test-admin", "CuratorOrg")  // Essential for CuratorOrg methods
+  .registeredUsers(users.admin)
+  .savedState(feeConfig);
+```
+
+**Important**: Always use both `caClientIdentity("test-admin", "CuratorOrg")` AND `users.admin` for testing methods that require CuratorOrg privileges, otherwise tests will fail with permission errors.
+
+### Key Technical Insights
+
+#### DTO Construction Pattern
+*Sometimes* DTOs don't take constructor parameters: If the DTO defines a constructor, it generally uses a constructor. Otherwise, use `plainToInstance` (imported from `class-transformer`) or `createValidDTO` (imported from `@gala-chain/api`).
+
+```typescript
+// DTO with constructor
+const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("100"));
+
+// DTO without constructor  
+const dto = new ConfigureLaunchpadFeeAddressDto();
+dto.newPlatformFeeAddress = asValidUserAlias("client|feeAddress");
+dto.newFeeAmount = 0.01;
+```
+
+#### Organization Permissions
+Methods like `ConfigureLaunchpadFeeAddress` and `FinalizeTokenAllocation` require CuratorOrg privileges. Always use `users.admin` for testing these methods, not regular test users.
+
+#### Bonding Curve Constraints
+Sell operations are mathematically constrained by previous buy operations and token precision limits. The bonding curve calculations can produce high-precision results that may exceed token decimal constraints (typically 10 decimal places).
+
+#### Test Data Setup Requirements
+Proper fixture setup requires comprehensive chain state including:
+- Token classes and instances for both native and meme tokens
+- Token balances for all participants (users and sale vaults)
+- LaunchpadSale objects with appropriate initial state
+- Fee configurations when testing fee-related functionality
+
 ### Execution Testing
 - Always execute actual contract methods, not just internal functions
 - Test both success and failure scenarios

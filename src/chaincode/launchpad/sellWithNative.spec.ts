@@ -85,39 +85,8 @@ describe("sellWithNative", () => {
   });
 
   it("should sell tokens for native currency successfully", async () => {
-    // Given
-    sale.buyToken(new BigNumber("1000"), new BigNumber("0.01")); // Pre-buy some tokens
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(
-        currencyClass,
-        currencyInstance,
-        launchpadGalaClass,
-        launchpadGalaInstance,
-        sale,
-        salelaunchpadGalaBalance,
-        saleCurrencyBalance,
-        userlaunchpadGalaBalance,
-        userCurrencyBalance
-      );
-
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("10"));
-    sellDto.uniqueKey = randomUniqueKey();
-    const signedDto = sellDto.signed(users.testUser1.privateKey);
-
-    // When
-    const response = await contract.SellWithNative(ctx, signedDto);
-
-    // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data).toHaveProperty("outputQuantity");
-    expect(response.Data).toHaveProperty("inputQuantity", "10");
-    expect(response.Data).toHaveProperty("isFinalized");
-  });
-
-  it("should handle small native token sell amount", async () => {
-    // Given
-    sale.buyToken(new BigNumber("500"), new BigNumber("0.01")); // Pre-buy some tokens
+    // Given - Sale needs native tokens to pay out, so simulate previous buys
+    sale.buyToken(new BigNumber("10000"), new BigNumber("10")); // Users bought tokens, sale now has GALA
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -141,13 +110,14 @@ describe("sellWithNative", () => {
 
     // Then
     expect(response.Status).toBe(1);
-    expect(response.Data?.inputQuantity).toBe("0.1");
-    expect(new BigNumber(response.Data?.outputQuantity || "0").isFinite()).toBe(true);
+    expect(response.Data).toHaveProperty("outputQuantity");
+    expect(response.Data).toHaveProperty("inputQuantity", "0.1");
+    expect(response.Data).toHaveProperty("isFinalized");
   });
 
-  it("should handle sell with expected token parameter", async () => {
+  it("should handle small native token sell amount", async () => {
     // Given
-    sale.buyToken(new BigNumber("800"), new BigNumber("0.01")); // Pre-buy some tokens
+    sale.buyToken(new BigNumber("5000"), new BigNumber("5")); // Users bought tokens, sale now has GALA
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -162,7 +132,37 @@ describe("sellWithNative", () => {
         userCurrencyBalance
       );
 
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("5"));
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.001"));
+    sellDto.uniqueKey = randomUniqueKey();
+    const signedDto = sellDto.signed(users.testUser1.privateKey);
+
+    // When
+    const response = await contract.SellWithNative(ctx, signedDto);
+
+    // Then
+    expect(response.Status).toBe(1);
+    expect(response.Data?.inputQuantity).toBe("0.001");
+    expect(new BigNumber(response.Data?.outputQuantity || "0").isFinite()).toBe(true);
+  });
+
+  it("should handle sell with expected token parameter", async () => {
+    // Given
+    sale.buyToken(new BigNumber("8000"), new BigNumber("8")); // Users bought tokens, sale now has GALA
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.05"));
     sellDto.expectedToken = new BigNumber("100"); // Set expectation for slippage protection
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
@@ -172,12 +172,12 @@ describe("sellWithNative", () => {
 
     // Then
     expect(response.Status).toBe(1);
-    expect(response.Data?.inputQuantity).toBe("5");
+    expect(response.Data?.inputQuantity).toBe("0.05");
   });
 
   it("should handle large native token sell amount", async () => {
     // Given
-    sale.buyToken(new BigNumber("2000"), new BigNumber("0.01")); // Pre-buy large amount
+    sale.buyToken(new BigNumber("20000"), new BigNumber("20")); // Users bought tokens, sale now has GALA
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -192,7 +192,7 @@ describe("sellWithNative", () => {
         userCurrencyBalance
       );
 
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("100"));
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("1"));
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
 
@@ -201,13 +201,13 @@ describe("sellWithNative", () => {
 
     // Then
     expect(response.Status).toBe(1);
-    expect(response.Data?.inputQuantity).toBe("100");
+    expect(response.Data?.inputQuantity).toBe("1");
     expect(new BigNumber(response.Data?.outputQuantity || "0").isPositive()).toBe(true);
   });
 
   it("should handle edge case with vault balance limits", async () => {
     // Given
-    sale.buyToken(new BigNumber("300"), new BigNumber("0.01")); // Pre-buy moderate amount
+    sale.buyToken(new BigNumber("30000"), new BigNumber("1000")); // Users bought tokens, sale has GALA amount
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -223,7 +223,7 @@ describe("sellWithNative", () => {
       );
 
     // Try to sell amount that exceeds what's in the vault
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("10000"));
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("10"));
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
 

@@ -14,7 +14,6 @@
  */
 import { asValidUserAlias, randomUniqueKey } from "@gala-chain/api";
 import { fixture, users } from "@gala-chain/test";
-import BigNumber from "bignumber.js";
 
 import { FinalizeTokenAllocationDto, LaunchpadFeeConfig } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
@@ -23,94 +22,105 @@ describe("finalizeTokenAllocation", () => {
   let feeConfig: LaunchpadFeeConfig;
 
   beforeEach(() => {
-    feeConfig = new LaunchpadFeeConfig(asValidUserAlias("client|platformFeeAddress"), new BigNumber("0.01"), [
-      users.testUser1.identityKey
+    feeConfig = new LaunchpadFeeConfig(asValidUserAlias("client|platformFeeAddress"), 0.01, [
+      users.admin.identityKey
     ]);
   });
 
   it("should create new token allocation successfully", async () => {
     // Given
     const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
+      .caClientIdentity("test-admin", "CuratorOrg")
+      .registeredUsers(users.admin)
       .savedState(feeConfig);
 
-    const finalizeDto = new FinalizeTokenAllocationDto(new BigNumber("0.02"), new BigNumber("0.03"));
+    const finalizeDto = new FinalizeTokenAllocationDto();
+    finalizeDto.platformFeePercentage = 0.02;
+    finalizeDto.ownerFeePercentage = 0.03;
     finalizeDto.uniqueKey = randomUniqueKey();
-    const signedDto = finalizeDto.signed(users.testUser1.privateKey);
+    const signedDto = finalizeDto.signed(users.admin.privateKey);
 
     // When
     const response = await contract.FinalizeTokenAllocation(ctx, signedDto);
 
     // Then
     expect(response.Status).toBe(1);
-    expect(response.Data?.platformFeePercentage.toFixed()).toBe("0.02");
-    expect(response.Data?.ownerFeePercentage.toFixed()).toBe("0.03");
+    expect(response.Data?.platformFeePercentage).toBe(0.02);
+    expect(response.Data?.ownerAllocationPercentage).toBe(0.03);
   });
 
   it("should update existing token allocation", async () => {
     // Given - Create existing allocation first
     const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
+      .caClientIdentity("test-admin", "CuratorOrg")
+      .registeredUsers(users.admin)
       .savedState(feeConfig);
 
-    const initialDto = new FinalizeTokenAllocationDto(new BigNumber("0.01"), new BigNumber("0.02"));
+    const initialDto = new FinalizeTokenAllocationDto();
+    initialDto.platformFeePercentage = 0.01;
+    initialDto.ownerFeePercentage = 0.02;
     initialDto.uniqueKey = randomUniqueKey();
-    const signedInitialDto = initialDto.signed(users.testUser1.privateKey);
+    const signedInitialDto = initialDto.signed(users.admin.privateKey);
 
     await contract.FinalizeTokenAllocation(ctx, signedInitialDto);
 
     // Update with new values
-    const updateDto = new FinalizeTokenAllocationDto(new BigNumber("0.05"), new BigNumber("0.06"));
+    const updateDto = new FinalizeTokenAllocationDto();
+    updateDto.platformFeePercentage = 0.05;
+    updateDto.ownerFeePercentage = 0.06;
     updateDto.uniqueKey = randomUniqueKey();
-    const signedUpdateDto = updateDto.signed(users.testUser1.privateKey);
+    const signedUpdateDto = updateDto.signed(users.admin.privateKey);
 
     // When
     const response = await contract.FinalizeTokenAllocation(ctx, signedUpdateDto);
 
     // Then
     expect(response.Status).toBe(1);
-    expect(response.Data?.platformFeePercentage.toFixed()).toBe("0.05");
-    expect(response.Data?.ownerFeePercentage.toFixed()).toBe("0.06");
+    expect(response.Data?.platformFeePercentage).toBe(0.05);
+    expect(response.Data?.ownerAllocationPercentage).toBe(0.06);
   });
 
   it("should handle zero percentage allocations", async () => {
     // Given
     const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
+      .caClientIdentity("test-admin", "CuratorOrg")
+      .registeredUsers(users.admin)
       .savedState(feeConfig);
 
-    const finalizeDto = new FinalizeTokenAllocationDto(new BigNumber("0"), new BigNumber("0"));
+    const finalizeDto = new FinalizeTokenAllocationDto();
+    finalizeDto.platformFeePercentage = 0;
+    finalizeDto.ownerFeePercentage = 0;
     finalizeDto.uniqueKey = randomUniqueKey();
-    const signedDto = finalizeDto.signed(users.testUser1.privateKey);
+    const signedDto = finalizeDto.signed(users.admin.privateKey);
 
     // When
     const response = await contract.FinalizeTokenAllocation(ctx, signedDto);
 
     // Then
     expect(response.Status).toBe(1);
-    expect(response.Data?.platformFeePercentage.toFixed()).toBe("0");
-    expect(response.Data?.ownerFeePercentage.toFixed()).toBe("0");
+    expect(response.Data?.platformFeePercentage).toBe(0);
+    expect(response.Data?.ownerAllocationPercentage).toBe(0);
   });
 
   it("should handle high percentage allocations", async () => {
     // Given
     const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
+      .caClientIdentity("test-admin", "CuratorOrg")
+      .registeredUsers(users.admin)
       .savedState(feeConfig);
 
-    const finalizeDto = new FinalizeTokenAllocationDto(
-      new BigNumber("0.1"), // 10%
-      new BigNumber("0.15") // 15%
-    );
+    const finalizeDto = new FinalizeTokenAllocationDto();
+    finalizeDto.platformFeePercentage = 0.1; // 10%
+    finalizeDto.ownerFeePercentage = 0.15; // 15%
     finalizeDto.uniqueKey = randomUniqueKey();
-    const signedDto = finalizeDto.signed(users.testUser1.privateKey);
+    const signedDto = finalizeDto.signed(users.admin.privateKey);
 
     // When
     const response = await contract.FinalizeTokenAllocation(ctx, signedDto);
 
     // Then
     expect(response.Status).toBe(1);
-    expect(response.Data?.platformFeePercentage.toFixed()).toBe("0.1");
-    expect(response.Data?.ownerFeePercentage.toFixed()).toBe("0.15");
+    expect(response.Data?.platformFeePercentage).toBe(0.1);
+    expect(response.Data?.ownerAllocationPercentage).toBe(0.15);
   });
 });

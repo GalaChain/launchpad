@@ -12,9 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { randomUniqueKey } from "@gala-chain/api";
-import { fixture, users } from "@gala-chain/test";
+import { randomUniqueKey, TokenBalance, TokenClass, TokenInstance } from "@gala-chain/api";
+import { fixture, users, currency } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
+import { plainToInstance } from "class-transformer";
 
 import { CreateTokenSaleDTO } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
@@ -28,12 +29,12 @@ describe("createSale", () => {
       "Test Token",
       "TEST",
       "A test token for launchpad",
+      "https://example.com/token.png",
+      new BigNumber(0),
       "TestCollection",
       "TestCategory"
     );
-    createSaleDto.tokenImage = "https://example.com/token.png";
     createSaleDto.websiteUrl = "https://example.com";
-    createSaleDto.preBuyQuantity = new BigNumber(0);
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -61,11 +62,12 @@ describe("createSale", () => {
       "Telegram Token",
       "TG",
       "A token with telegram link",
+      "https://example.com/tg.png",
+      new BigNumber(0),
       "TelegramCollection",
       "SocialCategory"
     );
     createSaleDto.telegramUrl = "https://t.me/testtoken";
-    createSaleDto.preBuyQuantity = new BigNumber(0);
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -88,11 +90,12 @@ describe("createSale", () => {
       "Twitter Token",
       "TWT",
       "A token with twitter link",
+      "https://example.com/twt.png",
+      new BigNumber(0),
       "TwitterCollection",
       "SocialCategory"
     );
     createSaleDto.twitterUrl = "https://twitter.com/testtoken";
-    createSaleDto.preBuyQuantity = new BigNumber(0);
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -106,18 +109,64 @@ describe("createSale", () => {
   });
 
   it("should create token sale with pre-buy amount", async () => {
-    // Given
-    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1);
+    // Given - Setup GALA token for pre-buy (matching LaunchpadSale nativeToken)
+    const galaClass = plainToInstance(TokenClass, {
+      collection: "GALA",
+      category: "Unit", 
+      type: "none",
+      additionalKey: "none",
+      decimals: 8,
+      name: "GALA",
+      symbol: "GALA",
+      description: "GALA token",
+      image: "",
+      maxSupply: new BigNumber("1e+10"),
+      maxCapacity: new BigNumber("1e+10"),
+      totalMintAllowance: new BigNumber("1e+10"),
+      totalSupply: new BigNumber("1e+10"),
+      totalBurned: new BigNumber("0"),
+      authorities: [users.testUser1.identityKey]
+    });
+
+    const galaInstance = plainToInstance(TokenInstance, {
+      collection: "GALA",
+      category: "Unit",
+      type: "none", 
+      additionalKey: "none",
+      instance: new BigNumber(0),
+      isNonFungible: false,
+      owner: users.testUser1.identityKey,
+      quantity: new BigNumber("1e+10")
+    });
+
+    const userGalaBalance = plainToInstance(TokenBalance, {
+      collection: "GALA",
+      category: "Unit",
+      type: "none",
+      additionalKey: "none", 
+      instance: new BigNumber(0),
+      owner: users.testUser1.identityKey,
+      quantity: new BigNumber("1000") // User has GALA for pre-buy
+    });
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        galaClass,
+        galaInstance,
+        userGalaBalance
+      );
 
     const createSaleDto = new CreateTokenSaleDTO(
       "Pre-buy Token",
       "PRE",
       "A token with pre-buy",
+      "https://example.com/pre.png",
+      new BigNumber("10"),
       "PreBuyCollection",
       "PreBuyCategory"
     );
     createSaleDto.websiteUrl = "https://example.com";
-    createSaleDto.preBuyQuantity = new BigNumber("10");
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -138,11 +187,12 @@ describe("createSale", () => {
       "Lowercase Token",
       "lower", // lowercase symbol
       "A token with lowercase symbol",
+      "https://example.com/lower.png",
+      new BigNumber(0),
       "LowerCollection",
       "LowerCategory"
     );
     createSaleDto.websiteUrl = "https://example.com";
-    createSaleDto.preBuyQuantity = new BigNumber(0);
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -163,13 +213,14 @@ describe("createSale", () => {
       "Social Token",
       "SOC",
       "A fully connected social token",
+      "https://example.com/soc.png",
+      new BigNumber(0),
       "SocialCollection",
       "FullSocialCategory"
     );
     createSaleDto.websiteUrl = "https://socialtoken.com";
     createSaleDto.telegramUrl = "https://t.me/socialtoken";
     createSaleDto.twitterUrl = "https://twitter.com/socialtoken";
-    createSaleDto.preBuyQuantity = new BigNumber(0);
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -192,12 +243,12 @@ describe("createSale", () => {
       "Image Token",
       "IMG",
       "A token with custom image",
+      "https://cdn.example.com/token-logo.png",
+      new BigNumber(0),
       "ImageCollection",
       "ImageCategory"
     );
     createSaleDto.websiteUrl = "https://example.com";
-    createSaleDto.tokenImage = "https://cdn.example.com/token-logo.png";
-    createSaleDto.preBuyQuantity = new BigNumber(0);
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
