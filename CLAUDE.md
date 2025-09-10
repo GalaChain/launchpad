@@ -158,3 +158,55 @@ expect(result.Message).toContain("expected error text");
 - Test both success and failure scenarios
 - Verify state changes through result objects and contract responses
 - Use real cryptographic signing and validation flows
+
+## Chaincode Unit Test File Organization
+
+Unit test are written in files side-by-side with source code files in `src/`. End-to-End intgration tests go in `e2e/`. 
+
+### 1:1 File-to-Test Association
+The `src/chaincode/launchpad/` directory generally follows a 1:1 correspondence between implementation files and their test files:
+
+- **Implementation files**: `{functionName}.ts` - Contains the core transaction logic
+- **Test files**: `{functionName}.spec.ts` - Contains comprehensive unit tests for the function
+- **Contract mapping**: Each function is exposed as a method in `LaunchpadContract.ts` and exported via `index.ts`
+
+This is not a strict rule but is a general convention.
+
+### Current Implementation Coverage
+Based on contract methods in `LaunchpadContract.ts`, the following functions should have corresponding files:
+
+**Contract Methods → Implementation Files:**
+- `CreateSale` → `createSale.ts`
+- `FetchSaleDetails` → `fetchSaleDetails.ts`  
+- `BuyExactToken` → `buyExactToken.ts`
+- `SellExactToken` → `sellExactToken.ts`
+- `BuyWithNative` → `buyWithNative.ts`
+- `SellWithNative` → `sellWithNative.ts`
+- `CallNativeTokenIn` → `callNativeTokenIn.ts`
+- `CallMemeTokenOut` → `callMemeTokenOut.ts`
+- `CallNativeTokenOut` → `callNativeTokenOut.ts`
+- `CallMemeTokenIn` → `callMemeTokenIn.ts`
+- `ConfigureLaunchpadFeeAddress` → `configureLaunchpadFeeConfig.ts`
+- `FinalizeTokenAllocation` → `finalizeTokenAllocation.ts`
+- `FetchLaunchpadFeeAmount` → `fetchLaunchpadFeeAmount.ts`
+- `AuthorizeBatchSubmitter` → `launchpadBatchSubmitAuthorizations.ts`
+- `DeauthorizeBatchSubmitter` → `launchpadBatchSubmitAuthorizations.ts`
+- `GetBatchSubmitAuthorities` → `launchpadBatchSubmitAuthorizations.ts`
+
+### Test Coverage Standards
+Each `.spec.ts` file should comprehensively test:
+
+1. **Happy Path Scenarios**: Valid inputs producing expected outputs
+3. **Business Logic Edge Cases**: Insufficient balances, expired sales, quantity limits
+5. **State Verification**: Proper updates to balances, sales, and configurations
+
+#### Unnecessary coverage
+
+1. **Validation Failures**: Invalid DTOs, missing required fields, etc: These cases are tested via class-validator and/or in the defined DTO classes that extend ChainCallDTO or SubmitCallDTO. The `@GalaTransaction` and `@Submit` decorators will always validate DTOs before these methods are executed by the contract. 
+2. **Error Conditions**: Network failures, state inconsistencies, concurrent operations, etc. should be tested as needed via integration tests (e2e directory) not unit tests.
+
+### Naming Conventions
+- Implementation files use camelCase: `buyExactToken.ts`
+- Test files match with `.spec.ts` suffix: `buyExactToken.spec.ts`
+- Exported function names match the implementation file name
+- Contract method names use PascalCase: `BuyExactToken`
