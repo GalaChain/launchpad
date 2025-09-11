@@ -172,12 +172,7 @@ describe("configureLaunchpadFeeAddress", () => {
     // Given
     const { ctx, contract } = fixture(LaunchpadContract)
       .caClientIdentity("test-admin", "CuratorOrg")
-      .registeredUsers(
-        users.admin,
-        users.testUser1,
-        users.testUser2,
-        users.testUser3
-      );
+      .registeredUsers(users.admin, users.testUser1, users.testUser2, users.testUser3);
 
     const authorities = [
       users.admin.identityKey,

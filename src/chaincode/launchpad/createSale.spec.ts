@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { randomUniqueKey, TokenBalance, TokenClass, TokenInstance } from "@gala-chain/api";
-import { fixture, users, currency } from "@gala-chain/test";
+import { TokenBalance, TokenClass, TokenInstance, randomUniqueKey } from "@gala-chain/api";
+import { currency, fixture, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
@@ -112,7 +112,7 @@ describe("createSale", () => {
     // Given - Setup GALA token for pre-buy (matching LaunchpadSale nativeToken)
     const galaClass = plainToInstance(TokenClass, {
       collection: "GALA",
-      category: "Unit", 
+      category: "Unit",
       type: "none",
       additionalKey: "none",
       decimals: 8,
@@ -131,7 +131,7 @@ describe("createSale", () => {
     const galaInstance = plainToInstance(TokenInstance, {
       collection: "GALA",
       category: "Unit",
-      type: "none", 
+      type: "none",
       additionalKey: "none",
       instance: new BigNumber(0),
       isNonFungible: false,
@@ -143,7 +143,7 @@ describe("createSale", () => {
       collection: "GALA",
       category: "Unit",
       type: "none",
-      additionalKey: "none", 
+      additionalKey: "none",
       instance: new BigNumber(0),
       owner: users.testUser1.identityKey,
       quantity: new BigNumber("1000") // User has GALA for pre-buy
@@ -151,11 +151,7 @@ describe("createSale", () => {
 
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
-      .savedState(
-        galaClass,
-        galaInstance,
-        userGalaBalance
-      );
+      .savedState(galaClass, galaInstance, userGalaBalance);
 
     const createSaleDto = new CreateTokenSaleDTO(
       "Pre-buy Token",

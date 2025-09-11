@@ -12,7 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { TokenInstance, TokenInstanceKey, UserAlias, asValidUserAlias, randomUniqueKey } from "@gala-chain/api";
+import {
+  TokenInstance,
+  TokenInstanceKey,
+  UserAlias,
+  asValidUserAlias,
+  randomUniqueKey
+} from "@gala-chain/api";
 import { fixture, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 
@@ -105,9 +111,9 @@ describe("fetchSaleDetails", () => {
 
     const reverseBondingCurveConfig = new ReverseBondingCurveConfigurationChainObject(
       new BigNumber(0.02), // minFeePortion
-      new BigNumber(0.05)  // maxFeePortion
+      new BigNumber(0.05) // maxFeePortion
     );
-    
+
     const saleWithConfig = new LaunchpadSale(
       vaultAddress,
       tokenInstanceKey,
@@ -115,7 +121,9 @@ describe("fetchSaleDetails", () => {
       users.testUser1.identityKey
     );
 
-    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(saleWithConfig);
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(saleWithConfig);
 
     const fetchSaleDto = new FetchSaleDto(vaultAddress);
     fetchSaleDto.uniqueKey = randomUniqueKey();

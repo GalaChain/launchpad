@@ -13,7 +13,13 @@
  * limitations under the License.
  */
 import { TokenClass, ValidationFailedError } from "@gala-chain/api";
-import { GalaChainContext, fetchTokenClass, getObjectByKey, putChainObject, transferToken } from "@gala-chain/chaincode";
+import {
+  GalaChainContext,
+  fetchTokenClass,
+  getObjectByKey,
+  putChainObject,
+  transferToken
+} from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
@@ -49,10 +55,12 @@ export async function sellWithNative(
   const sale: LaunchpadSale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
 
   const { collection, category, type, additionalKey } = sale.sellingToken;
-  const sellingTokenCompositeKey = TokenClass.getCompositeKeyFromParts(
-    TokenClass.INDEX_KEY,
-    [collection, category, type, additionalKey]
-  );
+  const sellingTokenCompositeKey = TokenClass.getCompositeKeyFromParts(TokenClass.INDEX_KEY, [
+    collection,
+    category,
+    type,
+    additionalKey
+  ]);
   const sellingToken = await getObjectByKey(ctx, TokenClass, sellingTokenCompositeKey);
 
   const nativeTokensLeftInVault = new BigNumber(sale.nativeTokenQuantity);
@@ -65,7 +73,9 @@ export async function sellWithNative(
   // Calculate how many tokens need to be sold to get the requested native amount
   const callMemeTokenInResult = await callMemeTokenIn(ctx, sellTokenDTO);
   const transactionFees = callMemeTokenInResult.extraFees.transactionFees;
-  const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity).decimalPlaces(sellingToken.decimals);
+  const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity).decimalPlaces(
+    sellingToken.decimals
+  );
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();

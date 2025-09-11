@@ -105,7 +105,7 @@ describe("sellWithNative", () => {
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
 
-    // todo: ideally tests illustrate our expected response. 
+    // todo: ideally tests illustrate our expected response.
     // given expected inputs, output, when / then
     // const expectedResponse =
 
