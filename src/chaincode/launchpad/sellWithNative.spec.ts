@@ -21,7 +21,7 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
-import { currency, fixture, users } from "@gala-chain/test";
+import { currency, fixture, transactionSuccess, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
@@ -105,14 +105,16 @@ describe("sellWithNative", () => {
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
 
+    // todo: ideally tests illustrate our expected response. 
+    // given expected inputs, output, when / then
+    // const expectedResponse =
+
     // When
     const response = await contract.SellWithNative(ctx, signedDto);
 
     // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data).toHaveProperty("outputQuantity");
-    expect(response.Data).toHaveProperty("inputQuantity", "0.1");
-    expect(response.Data).toHaveProperty("isFinalized");
+    // todo: ideally expectedRepsonse would be passed to transactionSuccess()
+    expect(response).toEqual(transactionSuccess());
   });
 
   it("should handle small native token sell amount", async () => {
@@ -140,9 +142,7 @@ describe("sellWithNative", () => {
     const response = await contract.SellWithNative(ctx, signedDto);
 
     // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data?.inputQuantity).toBe("0.001");
-    expect(new BigNumber(response.Data?.outputQuantity || "0").isFinite()).toBe(true);
+    expect(response).toEqual(transactionSuccess());
   });
 
   it("should handle sell with expected token parameter", async () => {
@@ -162,8 +162,12 @@ describe("sellWithNative", () => {
         userCurrencyBalance
       );
 
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.05"));
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.001"));
+
+    // expectedToken value, if provided, must be greater than or equal to actual amount received
+    // in other words, if the transaction would sell the buyer less than the buyer expects, it fails.
     sellDto.expectedToken = new BigNumber("100"); // Set expectation for slippage protection
+
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
 
@@ -171,13 +175,12 @@ describe("sellWithNative", () => {
     const response = await contract.SellWithNative(ctx, signedDto);
 
     // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data?.inputQuantity).toBe("0.05");
+    expect(response).toEqual(transactionSuccess());
   });
 
   it("should handle large native token sell amount", async () => {
     // Given
-    sale.buyToken(new BigNumber("20000"), new BigNumber("20")); // Users bought tokens, sale now has GALA
+    sale.buyToken(new BigNumber("2000000000"), new BigNumber("200000000")); // Users bought tokens, sale now has GALA
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -192,7 +195,7 @@ describe("sellWithNative", () => {
         userCurrencyBalance
       );
 
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("1"));
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("1000"));
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
 
@@ -200,14 +203,12 @@ describe("sellWithNative", () => {
     const response = await contract.SellWithNative(ctx, signedDto);
 
     // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data?.inputQuantity).toBe("1");
-    expect(new BigNumber(response.Data?.outputQuantity || "0").isPositive()).toBe(true);
+    expect(response).toEqual(transactionSuccess());
   });
 
   it("should handle edge case with vault balance limits", async () => {
     // Given
-    sale.buyToken(new BigNumber("30000"), new BigNumber("1000")); // Users bought tokens, sale has GALA amount
+    sale.buyToken(new BigNumber("10000"), new BigNumber("1000")); // Users bought tokens, sale has GALA amount
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -223,7 +224,7 @@ describe("sellWithNative", () => {
       );
 
     // Try to sell amount that exceeds what's in the vault
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("10"));
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.1"));
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
 
@@ -231,7 +232,8 @@ describe("sellWithNative", () => {
     const response = await contract.SellWithNative(ctx, signedDto);
 
     // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data?.inputQuantity).toBeDefined();
+    expect(response).toEqual(transactionSuccess());
+
+    // todo: check writes map, verify vault balance
   });
 });

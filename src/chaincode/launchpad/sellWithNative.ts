@@ -12,11 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ValidationFailedError } from "@gala-chain/api";
-import { GalaChainContext, fetchTokenClass, putChainObject, transferToken } from "@gala-chain/chaincode";
+import { TokenClass, ValidationFailedError } from "@gala-chain/api";
+import { GalaChainContext, fetchTokenClass, getObjectByKey, putChainObject, transferToken } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { NativeTokenQuantityDto, TradeResDto } from "../../api/types";
+import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
 import { callMemeTokenIn } from "./callMemeTokenIn";
@@ -46,7 +46,14 @@ export async function sellWithNative(
   sellTokenDTO: NativeTokenQuantityDto
 ): Promise<TradeResDto> {
   // Fetch and validate the sale object
-  const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
+  const sale: LaunchpadSale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
+
+  const { collection, category, type, additionalKey } = sale.sellingToken;
+  const sellingTokenCompositeKey = TokenClass.getCompositeKeyFromParts(
+    TokenClass.INDEX_KEY,
+    [collection, category, type, additionalKey]
+  );
+  const sellingToken = await getObjectByKey(ctx, TokenClass, sellingTokenCompositeKey);
 
   const nativeTokensLeftInVault = new BigNumber(sale.nativeTokenQuantity);
 
@@ -58,7 +65,7 @@ export async function sellWithNative(
   // Calculate how many tokens need to be sold to get the requested native amount
   const callMemeTokenInResult = await callMemeTokenIn(ctx, sellTokenDTO);
   const transactionFees = callMemeTokenInResult.extraFees.transactionFees;
-  const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity);
+  const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity).decimalPlaces(sellingToken.decimals);
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();

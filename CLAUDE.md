@@ -204,6 +204,28 @@ Proper fixture setup requires comprehensive chain state including:
 - Verify state changes through result objects and contract responses
 - Use real cryptographic signing and validation flows
 
+### Response Validation Best Practices
+Prefer using `transactionSuccess()` and `transactionError()` helper methods from `@gala-chain/test` over manual status checks:
+
+```typescript
+// Given expected inputs and outputs
+const expectedResponse = new SomeResponseDto();
+expectedResponse.someProperty = "expectedValue";
+
+// When
+const response = await contract.SomeMethod(ctx, dto);
+
+// Then - Use helper methods for better error reporting
+expect(response).toEqual(transactionSuccess(expectedResponse));
+// Instead of: expect(response.Status).toBe(1);
+```
+
+**Benefits**:
+- Single assertion compares both status and response properties
+- Detailed error messages show actual vs expected responses
+- Reveals underlying implementation issues (e.g., decimal precision errors)
+- Better test failure diagnostics for debugging
+
 ## Chaincode Unit Test File Organization
 
 Unit test are written in files side-by-side with source code files in `src/`. End-to-End intgration tests go in `e2e/`. 
