@@ -132,6 +132,7 @@ export async function sellWithNative(
     userAddress: ctx.callingUser,
     isFinalized: false,
     functionName: "SellWithNative",
-    uniqueKey: sellTokenDTO.uniqueKey
+    uniqueKey: sellTokenDTO.uniqueKey,
+    totalTokenSold: sale.fetchTokensSold()
   };
 }
