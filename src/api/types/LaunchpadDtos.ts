@@ -309,6 +309,9 @@ export class TradeResDto {
 
   @IsString()
   public uniqueKey: string;
+
+  @IsString()
+  public totalTokenSold: string;
 }
 
 export class FetchSaleDto extends ChainCallDTO {
