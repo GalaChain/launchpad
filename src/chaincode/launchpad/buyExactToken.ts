@@ -151,6 +151,7 @@ export async function buyExactToken(
     userAddress: ctx.callingUser,
     isFinalized: isSaleFinalized,
     functionName: "BuyExactToken",
-    uniqueKey: buyTokenDTO.uniqueKey
+    uniqueKey: buyTokenDTO.uniqueKey,
+    totalTokenSold: sale.fetchTokensSold()
   };
 }

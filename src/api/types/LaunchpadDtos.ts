@@ -309,6 +309,9 @@ export class TradeResDto {
 
   @IsString()
   public uniqueKey: string;
+
+  @IsString()
+  public totalTokenSold: string;
 }
 
 export class FetchSaleDto extends ChainCallDTO {
@@ -400,5 +403,5 @@ export class BatchSubmitAuthoritiesResDto extends ChainCallDTO {
 
 export class TransactionFeeResDto {
   @IsNumber()
-  feeAmount;
+  feeAmount: number;
 }

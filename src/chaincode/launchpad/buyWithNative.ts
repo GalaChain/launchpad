@@ -155,6 +155,7 @@ export async function buyWithNative(
     userAddress: ctx.callingUser,
     isFinalized: isSaleFinalized,
     functionName: "BuyWithNative",
-    uniqueKey: buyTokenDTO.uniqueKey
+    uniqueKey: buyTokenDTO.uniqueKey,
+    totalTokenSold: sale.fetchTokensSold()
   };
 }

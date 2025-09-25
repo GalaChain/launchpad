@@ -133,6 +133,7 @@ export async function sellExactToken(
     userAddress: ctx.callingUser,
     isFinalized: false,
     functionName: "SellExactToken",
-    uniqueKey: sellTokenDTO.uniqueKey
+    uniqueKey: sellTokenDTO.uniqueKey,
+    totalTokenSold: sale.fetchTokensSold()
   };
 }
