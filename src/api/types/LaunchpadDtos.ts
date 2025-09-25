@@ -403,5 +403,5 @@ export class BatchSubmitAuthoritiesResDto extends ChainCallDTO {
 
 export class TransactionFeeResDto {
   @IsNumber()
-  feeAmount;
+  feeAmount: number;
 }
