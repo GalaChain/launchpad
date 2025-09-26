@@ -21,7 +21,6 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
-import { ValidationFailedError } from "@gala-chain/api";
 import { InvalidDecimalError } from "@gala-chain/chaincode";
 import { currency, fixture, transactionError, transactionSuccess, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
