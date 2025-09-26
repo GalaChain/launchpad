@@ -55,7 +55,7 @@ describe("sellExactToken", () => {
     // Initialize sale with manual values
     sale = new LaunchpadSale(
       vaultAddress,
-      launchpadGalaInstance.instanceKeyObj(),
+      currencyInstance.instanceKeyObj(),
       undefined,
       users.testUser1.identityKey
     );
@@ -129,9 +129,9 @@ describe("sellExactToken", () => {
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
-        zeroDecimalNativeClass,
+        currencyClass,
         currencyInstance,
-        launchpadGalaClass,
+        zeroDecimalNativeClass,
         launchpadGalaInstance,
         sale,
         salelaunchpadGalaBalance,
@@ -154,7 +154,7 @@ describe("sellExactToken", () => {
     );
   });
 
-  it("should reject sell when meme token has 0 decimals and input dto contains fractional quantity", async () => {
+  it("should reject sell when meme token has 0 decimals and input dto contains greater fractional precision", async () => {
     // Given
     const zeroDecimalMemeClass = plainToInstance(TokenClass, {
       ...currency.tokenClassPlain(),

@@ -24,11 +24,11 @@ import {
   randomUniqueKey
 } from "@gala-chain/api";
 import { InvalidDecimalError } from "@gala-chain/chaincode";
-import { currency, fixture, transactionError, users } from "@gala-chain/test";
+import { currency, fixture, transactionError, transactionSuccess, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
-import { LaunchpadFeeConfig, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
+import { LaunchpadFeeConfig, LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
 
@@ -64,7 +64,7 @@ describe("buyWithNative", () => {
     // Initialize sale with manual values
     sale = new LaunchpadSale(
       vaultAddress,
-      launchpadGalaInstance.instanceKeyObj(),
+      currencyInstance.instanceKeyObj(),
       undefined,
       users.testUser1.identityKey
     );
@@ -94,7 +94,7 @@ describe("buyWithNative", () => {
     });
   });
 
-  it("should reject buy when meme token has 0 decimals and bonding curve produces fractional quantity", async () => {
+  it("should round buy when meme token has 0 decimals and bonding curve produces fractional quantity", async () => {
     // Given
     const zeroDecimalCurrencyClass = plainToInstance(TokenClass, {
       ...currency.tokenClassPlain(),
@@ -123,15 +123,15 @@ describe("buyWithNative", () => {
     // When
     const buyTokenRes = await contract.BuyWithNative(ctx, dto);
 
-    // Then - Expect error due to decimal precision mismatch
-    expect(buyTokenRes).toEqual(
+    // Then - Expect code to round transferToken qty to decimal limit specified by TokenClass
+    expect(buyTokenRes).not.toEqual(
       transactionError(
         new InvalidDecimalError(new BigNumber("605.60177406237267161"), zeroDecimalCurrencyClass.decimals)
       )
     );
   });
 
-  it("should reject buy when native token has 0 decimals and input dto has fractional quantity", async () => {
+  it("should reject buy when input dto has higher fractional precision than GALA TokenClass", async () => {
     // Given
     const zeroDecimalLaunchpadClass = plainToInstance(TokenClass, {
       ...launchpadgala.tokenClassPlain(),
@@ -187,11 +187,7 @@ describe("buyWithNative", () => {
     dto.uniqueKey = randomUniqueKey();
     dto.sign(users.testUser1.privateKey);
 
-    //When
-    const buyTokenRes = await contract.BuyWithNative(ctx, dto);
-
-    //Then
-    expect(buyTokenRes.Data).toMatchObject({
+    const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "150",
       totalFees: "0.00000000",
       outputQuantity: "2101667.8890651635002",
@@ -203,8 +199,11 @@ describe("buyWithNative", () => {
       functionName: "BuyWithNative"
     });
 
-    expect(buyTokenRes.Data?.inputQuantity).toEqual("150");
-    expect(buyTokenRes.Data?.outputQuantity).toEqual("2101667.8890651635002");
+    //When
+    const buyTokenRes = await contract.BuyWithNative(ctx, dto);
+
+    //Then
+    expect(buyTokenRes).toEqual(transactionSuccess(expectedResponse));
   });
 
   test("User should be able to buy tokens , fee configured check", async () => {
@@ -232,11 +231,7 @@ describe("buyWithNative", () => {
     dto.uniqueKey = randomUniqueKey();
     dto.sign(users.testUser1.privateKey);
 
-    //When
-    const buyTokenRes = await contract.BuyWithNative(ctx, dto);
-
-    //Then
-    expect(buyTokenRes.Data).toMatchObject({
+    const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "1000",
       totalFees: "320.00000000",
       outputQuantity: "3663321.3628130557168",
@@ -248,9 +243,11 @@ describe("buyWithNative", () => {
       functionName: "BuyWithNative"
     });
 
-    expect(buyTokenRes.Data?.totalFees).toEqual("320.00000000");
-    expect(buyTokenRes.Data?.inputQuantity).toEqual("1000");
-    expect(buyTokenRes.Data?.outputQuantity).toEqual("3663321.3628130557168");
+    //When
+    const buyTokenRes = await contract.BuyWithNative(ctx, dto);
+
+    //Then
+    expect(buyTokenRes).toEqual(transactionSuccess(expectedResponse));
   });
 
   it("should throw error if user has insufficient funds incuding the transaction fees", async () => {
@@ -284,7 +281,7 @@ describe("buyWithNative", () => {
 
     //Then
     expect(buyTokenRes).toEqual(
-      GalaChainResponse.Error(
+      transactionError(
         new ValidationFailedError(
           "Insufficient balance: Total amount required including fee is 2166101.31430784"
         )

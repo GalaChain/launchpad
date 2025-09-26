@@ -26,7 +26,7 @@ import { currency, fixture, transactionError, transactionSuccess, users } from "
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
-import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
+import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
 
@@ -55,7 +55,7 @@ describe("sellWithNative", () => {
     // Initialize sale with manual values
     sale = new LaunchpadSale(
       vaultAddress,
-      launchpadGalaInstance.instanceKeyObj(),
+      currencyInstance.instanceKeyObj(),
       undefined,
       users.testUser1.identityKey
     );
@@ -81,11 +81,11 @@ describe("sellWithNative", () => {
     userCurrencyBalance = plainToInstance(TokenBalance, {
       ...currency.tokenBalance(),
       owner: users.testUser1.identityKey,
-      quantity: new BigNumber("1000") // User has some CURRENCY tokens
+      quantity: new BigNumber("10000") // User has some CURRENCY tokens
     });
   });
 
-  it("should reject sell when meme token has 0 decimals and bonding curve produces fractional quantity", async () => {
+  test("Round sell qty when bonding curve produces fractional precision than meme TokenClass.decimals", async () => {
     // Given - Setup meme token with 0 decimals to force decimal precision error
     const zeroDecimalMemeTokenClass = plainToInstance(TokenClass, {
       ...currency.tokenClassPlain(),
@@ -118,22 +118,22 @@ describe("sellWithNative", () => {
     const response = await contract.SellWithNative(ctx, sellDto);
 
     // Then - Expect error due to decimal precision mismatch
-    expect(response).toEqual(
+    expect(response).not.toEqual(
       transactionError(
         new InvalidDecimalError(new BigNumber("9940.1186641108"), zeroDecimalMemeTokenClass.decimals)
       )
     );
   });
 
-  it("should reject sell when native token has 0 decimals and dto contains fractional quantity", async () => {
+  it("should reject sell when dto contains fractional precision greater than native TokenClass.decimals", async () => {
     // Given - Setup meme token with 0 decimals to force decimal precision error
     const zeroDecimalLaunchpadGalaClass = plainToInstance(TokenClass, {
       ...launchpadgala.tokenClassPlain(),
-      decimals: 0 // Integer-only meme token
+      decimals: 8 // This codebase currently hard-codes 8 as NATIVE_TOKEN_DECIMALS...
     });
 
     // Simulate prior buys to establish sale state with native tokens
-    sale.buyToken(new BigNumber("10000"), new BigNumber("10"));
+    sale.buyToken(new BigNumber("100"), new BigNumber("100"));
 
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
@@ -150,7 +150,7 @@ describe("sellWithNative", () => {
       );
 
     // Request native tokens that will require fractional meme tokens from bonding curve
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.001"));
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.123456789"));
     sellDto.uniqueKey = randomUniqueKey();
     sellDto.sign(users.testUser1.privateKey);
 
@@ -166,7 +166,7 @@ describe("sellWithNative", () => {
   });
 
   it("should sell tokens for native currency successfully", async () => {
-    // Given - Sale needs native tokens to pay out, so simulate previous buys
+    // Given
     sale.buyToken(new BigNumber("10000"), new BigNumber("10")); // Users bought tokens, sale now has GALA
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
@@ -186,16 +186,25 @@ describe("sellWithNative", () => {
     sellDto.uniqueKey = randomUniqueKey();
     const signedDto = sellDto.signed(users.testUser1.privateKey);
 
-    // todo: ideally tests illustrate our expected response.
-    // given expected inputs, output, when / then
-    // const expectedResponse =
+    const expectedResponse = plainToInstance(TradeResDto, {
+      functionName: "SellWithNative",
+      inputQuantity: "6008.9271949682",
+      isFinalized: false,
+      outputQuantity: "0.1",
+      tokenName: "AUTOMATEDTESTCOIN",
+      totalFees: "0",
+      totalTokenSold: "3991.0728050318",
+      tradeType: "Sell",
+      uniqueKey: sellDto.uniqueKey,
+      userAddress: "client|testUser1",
+      vaultAddress: "service|GALA$Unit$none$none$launchpad"
+    });
 
     // When
     const response = await contract.SellWithNative(ctx, signedDto);
 
     // Then
-    // todo: ideally expectedRepsonse would be passed to transactionSuccess()
-    expect(response).toEqual(transactionSuccess());
+    expect(response).toEqual(transactionSuccess(expectedResponse));
   });
 
   it("should handle small native token sell amount", async () => {

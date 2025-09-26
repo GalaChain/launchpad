@@ -41,7 +41,7 @@ const tokenClassKeyPlain = createPlainFn({
 const tokenClassPlain = createPlainFn({
   ...tokenClassKeyPlain(),
   description: "Generated via automated test suite.",
-  decimals: 10,
+  decimals: 8, // This codebase currently hard-codes 8 as NATIVE_TOKEN_DECIMALS 
   image: "https://app.gala.games/test-image-placeholder-url.png",
   isNonFungible: false,
   maxCapacity: new BigNumber(100000000000000),
