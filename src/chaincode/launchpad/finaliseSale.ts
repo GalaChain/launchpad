@@ -52,7 +52,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   }
 
   const platformFeePercentage = feeAllocation ? feeAllocation.platformFeePercentage : 0.01;
-  const ownerAllocationPercentage = feeAllocation ? feeAllocation.ownerAllocationPercentage : 0.5;
+  const ownerAllocationPercentage = feeAllocation ? feeAllocation.ownerAllocationPercentage : 0.05;
   const liquidityAllocationPercentage = feeAllocation ? feeAllocation.liquidityAllocationPercentage : 0.94;
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();

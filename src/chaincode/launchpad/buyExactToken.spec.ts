@@ -67,7 +67,7 @@ describe("buyWithNative", () => {
     // Initialize sale with manual values
     sale = new LaunchpadSale(
       vaultAddress,
-      launchpadGalaInstance.instanceKeyObj(),
+      currencyInstance.instanceKeyObj(),
       undefined,
       users.testUser1.identityKey
     );
@@ -180,6 +180,56 @@ describe("buyWithNative", () => {
     });
     expect(buyTokenRes.Data?.inputQuantity).toEqual("0.08991559");
     expect(buyTokenRes.Data?.outputQuantity).toEqual("5430");
+  });
+
+  test("User should be able to finalise sale , if fee is configured", async () => {
+    //Given
+    salelaunchpadGalaBalance = plainToInstance(TokenBalance, {
+      ...launchpadgala.tokenBalance(),
+      owner: vaultAddress,
+      quantity: new BigNumber("0")
+    });
+
+    saleCurrencyBalance = plainToInstance(TokenBalance, {
+      ...currency.tokenBalance(),
+      owner: vaultAddress,
+      quantity: new BigNumber("2e+7")
+    });
+    userlaunchpadGalaBalance = plainToInstance(TokenBalance, {
+      ...launchpadgala.tokenBalance(),
+      owner: users.testUser1.identityKey,
+      quantity: new BigNumber("100000000")
+    });
+
+    const launchpadConfig = new LaunchpadFeeConfig(users.testUser2.identityKey, Number("0.001"), [
+      users.testUser2.identityKey
+    ]);
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance,
+        launchpadConfig
+      );
+
+    const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("10000000"));
+
+    dto.uniqueKey = randomUniqueKey();
+    dto.sign(users.testUser1.privateKey);
+
+    //When
+    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
+
+    //Then
+    expect(buyTokenRes.Data?.isFinalized).toBe(true);
   });
 
   it("should throw error if user has insufficient funds incuding the transaction fees", async () => {
