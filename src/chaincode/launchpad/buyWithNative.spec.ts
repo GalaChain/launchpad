@@ -166,7 +166,7 @@ describe("buyWithNative", () => {
     );
   });
 
-  test("User should be able to buy tokens with providing native gala , without fee configured", async () => {
+  test("User buys tokens by providing native gala, without fee needing to be configured", async () => {
     //Given
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
@@ -190,13 +190,15 @@ describe("buyWithNative", () => {
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "150",
       totalFees: "0.00000000",
-      outputQuantity: "2101667.8890651635002",
+      totalTokenSold: "2101667.8890651635",
+      outputQuantity: "2101667.8890651635",
       tokenName: "AUTOMATEDTESTCOIN",
       tradeType: "Buy",
       vaultAddress: "service|GALA$Unit$none$none$launchpad",
       userAddress: "client|testUser1",
       isFinalized: false,
-      functionName: "BuyWithNative"
+      functionName: "BuyWithNative",
+      uniqueKey: dto.uniqueKey
     });
 
     //When
@@ -206,7 +208,7 @@ describe("buyWithNative", () => {
     expect(buyTokenRes).toEqual(transactionSuccess(expectedResponse));
   });
 
-  test("User should be able to buy tokens , fee configured check", async () => {
+  test("User buys tokens, configured fee is checked", async () => {
     //Given
     const launchpadConfig = new LaunchpadFeeConfig(users.testUser2.identityKey, Number("0.32"), [
       users.testUser2.identityKey
@@ -234,13 +236,15 @@ describe("buyWithNative", () => {
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "1000",
       totalFees: "320.00000000",
-      outputQuantity: "3663321.3628130557168",
+      totalTokenSold: "3663321.3628130557",
+      outputQuantity: "3663321.3628130557",
       tokenName: "AUTOMATEDTESTCOIN",
       tradeType: "Buy",
       vaultAddress: "service|GALA$Unit$none$none$launchpad",
       userAddress: "client|testUser1",
       isFinalized: false,
-      functionName: "BuyWithNative"
+      functionName: "BuyWithNative",
+      uniqueKey: dto.uniqueKey
     });
 
     //When
