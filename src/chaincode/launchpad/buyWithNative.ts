@@ -12,11 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ValidationFailedError } from "@gala-chain/api";
+import { TokenClass, ValidationFailedError } from "@gala-chain/api";
 import {
   GalaChainContext,
   fetchOrCreateBalance,
   fetchTokenClass,
+  getObjectByKey,
   putChainObject,
   transferToken
 } from "@gala-chain/chaincode";
@@ -65,11 +66,24 @@ export async function buyWithNative(
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
+  // Round tokensToBuy based on decimals property of sellToken TokenClass entry,
+  // because otherwise `transferToken()` call below will fail with
+  // an INVALID_DECIMALS error.
+  const { collection, category, type, additionalKey } = sale.sellingToken;
+
+  const memeTokenClass = await getObjectByKey(
+    ctx,
+    TokenClass,
+    TokenClass.getCompositeKeyFromParts(TokenClass.INDEX_KEY, [collection, category, type, additionalKey])
+  );
+
+  tokensToBuy = tokensToBuy.decimalPlaces(memeTokenClass.decimals);
+
   // If vault has fewer tokens than what user wants to buy, cap the purchase
   if (tokensLeftInVault.comparedTo(tokensToBuy) <= 0) {
-    tokensToBuy = tokensLeftInVault;
-    const nativeTokensrequiredToBuyDto = new ExactTokenQuantityDto(buyTokenDTO.vaultAddress, tokensToBuy);
-    const callNativeTokenInResult = await callNativeTokenIn(ctx, nativeTokensrequiredToBuyDto);
+    tokensToBuy = tokensLeftInVault.decimalPlaces(memeTokenClass.decimals);
+    const nativeTokensRequiredToBuyDto = new ExactTokenQuantityDto(buyTokenDTO.vaultAddress, tokensToBuy);
+    const callNativeTokenInResult = await callNativeTokenIn(ctx, nativeTokensRequiredToBuyDto);
     transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
     buyTokenDTO.nativeTokenQuantity = new BigNumber(callNativeTokenInResult.calculatedQuantity);
     isSaleFinalized = true;
@@ -80,8 +94,9 @@ export async function buyWithNative(
     buyTokenDTO.nativeTokenQuantity
       .plus(new BigNumber(sale.nativeTokenQuantity))
       .gte(new BigNumber(LaunchpadSale.MARKET_CAP))
-  )
+  ) {
     isSaleFinalized = true;
+  }
 
   // Check for slippage condition
   if (buyTokenDTO.expectedToken && buyTokenDTO.expectedToken.comparedTo(tokensToBuy) > 0) {

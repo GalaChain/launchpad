@@ -23,7 +23,8 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
-import { currency, fixture, users } from "@gala-chain/test";
+import { InvalidDecimalError } from "@gala-chain/chaincode";
+import { currency, fixture, transactionError, transactionSuccess, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
@@ -31,7 +32,8 @@ import {
   ExactTokenQuantityDto,
   LaunchpadFeeConfig,
   LaunchpadSale,
-  NativeTokenQuantityDto
+  NativeTokenQuantityDto,
+  TradeResDto
 } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
@@ -59,7 +61,7 @@ describe("buyWithNative", () => {
 
     launchpadGalaClass = plainToInstance(TokenClass, {
       ...launchpadgala.tokenClassPlain(),
-      decimals: 18
+      decimals: 8
     });
 
     vaultAddress = asValidUserAlias(`service|${launchpadGalaClassKey.toStringKey()}$launchpad`);
@@ -97,8 +99,71 @@ describe("buyWithNative", () => {
     });
   });
 
+  it("should properly round buy qty to native token decimals limit when bonding curve produces greater fractional precision", async () => {
+    // Given
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    // Choose a token quantity that will produce fractional native tokens from bonding curve
+    // The bonding curve calculation will produce a value like 0.00825575
+    const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("500"));
+    dto.uniqueKey = randomUniqueKey();
+    dto.sign(users.testUser1.privateKey);
+
+    // When
+    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
+
+    // Then
+    expect(buyTokenRes).toEqual(transactionSuccess());
+  });
+
+  it("should reject buy when meme token has 0 decimals and input dto contains fractional quantity", async () => {
+    // Given - Setup token with 0 decimals to force decimal precision error
+    const zeroDecimalCurrencyClass = plainToInstance(TokenClass, {
+      ...currency.tokenClassPlain(),
+      decimals: 0 // Integer-only token
+    });
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        zeroDecimalCurrencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("500.555"));
+    dto.uniqueKey = randomUniqueKey();
+    dto.sign(users.testUser1.privateKey);
+
+    // When
+    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
+
+    // Then
+    expect(buyTokenRes).toEqual(
+      transactionError(new InvalidDecimalError(dto.tokenQuantity, zeroDecimalCurrencyClass.decimals))
+    );
+  });
+
   test("User should be able to buy exact tokens, without fee configured", async () => {
-    //Given
+    // Given
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -118,27 +183,29 @@ describe("buyWithNative", () => {
     dto.uniqueKey = randomUniqueKey();
     dto.sign(users.testUser1.privateKey);
 
-    //When
-    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
-
-    //Then
-    expect(buyTokenRes.Data).toMatchObject({
+    const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "0.00825575",
       totalFees: "0.00000000",
+      totalTokenSold: "500",
       outputQuantity: "500",
       tokenName: "AUTOMATEDTESTCOIN",
       tradeType: "Buy",
+      uniqueKey: dto.uniqueKey,
       vaultAddress: "service|GALA$Unit$none$none$launchpad",
       userAddress: "client|testUser1",
       isFinalized: false,
       functionName: "BuyExactToken"
     });
-    expect(buyTokenRes.Data?.inputQuantity).toEqual("0.00825575");
-    expect(buyTokenRes.Data?.outputQuantity).toEqual("500");
+
+    // When
+    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
+
+    // Then
+    expect(buyTokenRes).toEqual(transactionSuccess(expectedResponse));
   });
 
   test("User should be able to buy tokens , fee configured check", async () => {
-    //Given
+    // Given
     const launchpadConfig = new LaunchpadFeeConfig(users.testUser2.identityKey, Number("0.32"), [
       users.testUser2.identityKey
     ]);
@@ -163,26 +230,28 @@ describe("buyWithNative", () => {
     dto.uniqueKey = randomUniqueKey();
     dto.sign(users.testUser1.privateKey);
 
-    //When
-    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
-
-    //Then
-    expect(buyTokenRes.Data).toMatchObject({
+    const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "0.08991559",
       totalFees: "0.02877299",
+      totalTokenSold: "5430",
       outputQuantity: "5430",
       tokenName: "AUTOMATEDTESTCOIN",
       tradeType: "Buy",
       vaultAddress: "service|GALA$Unit$none$none$launchpad",
       userAddress: "client|testUser1",
       isFinalized: false,
-      functionName: "BuyExactToken"
+      functionName: "BuyExactToken",
+      uniqueKey: dto.uniqueKey
     });
-    expect(buyTokenRes.Data?.inputQuantity).toEqual("0.08991559");
-    expect(buyTokenRes.Data?.outputQuantity).toEqual("5430");
+
+    // When
+    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
+
+    // Then
+    expect(buyTokenRes).toEqual(transactionSuccess(expectedResponse));
   });
 
-  test("User should be able to finalise sale , if fee is configured", async () => {
+  test("User should be able to finalize sale , if fee is configured", async () => {
     //Given
     salelaunchpadGalaBalance = plainToInstance(TokenBalance, {
       ...launchpadgala.tokenBalance(),
@@ -229,6 +298,7 @@ describe("buyWithNative", () => {
     const buyTokenRes = await contract.BuyExactToken(ctx, dto);
 
     //Then
+    expect(buyTokenRes).toEqual(transactionSuccess());
     expect(buyTokenRes.Data?.isFinalized).toBe(true);
   });
 

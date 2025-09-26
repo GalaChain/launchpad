@@ -54,7 +54,7 @@ describe("callNativeTokenIn", () => {
     // Initialize sale with manual values
     sale = new LaunchpadSale(
       vaultAddress,
-      launchpadGalaInstance.instanceKeyObj(),
+      currencyInstance.instanceKeyObj(),
       undefined,
       users.testUser1.identityKey
     );
