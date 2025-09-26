@@ -23,6 +23,7 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
+import { InvalidDecimalError } from "@gala-chain/chaincode";
 import { currency, fixture, transactionError, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
@@ -35,7 +36,6 @@ import {
 } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
-import { InvalidDecimalError } from "@gala-chain/chaincode";
 
 describe("buyWithNative", () => {
   let currencyClass: TokenClass;
@@ -129,12 +129,9 @@ describe("buyWithNative", () => {
     const buyTokenRes = await contract.BuyExactToken(ctx, dto);
 
     // Then - Expect error due to decimal precision mismatch
-    expect(buyTokenRes).toEqual(transactionError(
-      new InvalidDecimalError(
-        new BigNumber("0.00825575"),
-        launchpadGalaClass.decimals
-      )
-    ));
+    expect(buyTokenRes).toEqual(
+      transactionError(new InvalidDecimalError(new BigNumber("0.00825575"), launchpadGalaClass.decimals))
+    );
   });
 
   it("should reject buy when meme token has 0 decimals and input dto contains fractional quantity", async () => {
@@ -166,12 +163,9 @@ describe("buyWithNative", () => {
     const buyTokenRes = await contract.BuyExactToken(ctx, dto);
 
     // Then
-    expect(buyTokenRes).toEqual(transactionError(
-      new InvalidDecimalError(
-        dto.tokenQuantity,
-        zeroDecimalCurrencyClass.decimals
-      )
-    ));
+    expect(buyTokenRes).toEqual(
+      transactionError(new InvalidDecimalError(dto.tokenQuantity, zeroDecimalCurrencyClass.decimals))
+    );
   });
 
   test("User should be able to buy exact tokens, without fee configured", async () => {

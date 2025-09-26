@@ -21,15 +21,15 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
-import { currency, fixture, transactionError, transactionSuccess, users } from "@gala-chain/test";
 import { ValidationFailedError } from "@gala-chain/api";
+import { InvalidDecimalError } from "@gala-chain/chaincode";
+import { currency, fixture, transactionError, transactionSuccess, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
 import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
-import { InvalidDecimalError } from "@gala-chain/chaincode";
 
 describe("sellWithNative", () => {
   let currencyClass: TokenClass;
@@ -119,12 +119,11 @@ describe("sellWithNative", () => {
     const response = await contract.SellWithNative(ctx, sellDto);
 
     // Then - Expect error due to decimal precision mismatch
-    expect(response).toEqual(transactionError(
-      new InvalidDecimalError(
-        new BigNumber("9940.1186641108"),
-        zeroDecimalMemeTokenClass.decimals
+    expect(response).toEqual(
+      transactionError(
+        new InvalidDecimalError(new BigNumber("9940.1186641108"), zeroDecimalMemeTokenClass.decimals)
       )
-    ));
+    );
   });
 
   it("should reject sell when native token has 0 decimals and dto contains fractional quantity", async () => {
@@ -160,12 +159,11 @@ describe("sellWithNative", () => {
     const response = await contract.SellWithNative(ctx, sellDto);
 
     // Then - Expect error due to decimal precision mismatch
-    expect(response).toEqual(transactionError(
-      new InvalidDecimalError(
-        sellDto.nativeTokenQuantity,
-        zeroDecimalLaunchpadGalaClass.decimals
+    expect(response).toEqual(
+      transactionError(
+        new InvalidDecimalError(sellDto.nativeTokenQuantity, zeroDecimalLaunchpadGalaClass.decimals)
       )
-    ));
+    );
   });
 
   it("should sell tokens for native currency successfully", async () => {

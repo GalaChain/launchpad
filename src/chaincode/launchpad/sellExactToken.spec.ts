@@ -21,15 +21,15 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
-import { currency, fixture, transactionError, users } from "@gala-chain/test";
 import { ValidationFailedError } from "@gala-chain/api";
+import { InvalidDecimalError } from "@gala-chain/chaincode";
+import { currency, fixture, transactionError, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
 import { ExactTokenQuantityDto, LaunchpadSale } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
-import { InvalidDecimalError } from "@gala-chain/chaincode";
 
 describe("sellExactToken", () => {
   let currencyClass: TokenClass;
@@ -150,12 +150,9 @@ describe("sellExactToken", () => {
     const response = await contract.SellExactToken(ctx, signedDto);
 
     // Then - Expect error due to decimal precision mismatch
-    expect(response).toEqual(transactionError(
-      new InvalidDecimalError(
-        new BigNumber("0.00166022"),
-        zeroDecimalNativeClass.decimals
-      )
-    ));
+    expect(response).toEqual(
+      transactionError(new InvalidDecimalError(new BigNumber("0.00166022"), zeroDecimalNativeClass.decimals))
+    );
   });
 
   it("should reject sell when meme token has 0 decimals and input dto contains fractional quantity", async () => {
@@ -191,12 +188,9 @@ describe("sellExactToken", () => {
     const response = await contract.SellExactToken(ctx, signedDto);
 
     // Then - Expect error due to decimal precision mismatch
-    expect(response).toEqual(transactionError(
-      new InvalidDecimalError(
-        sellDto.tokenQuantity,
-        zeroDecimalMemeClass.decimals
-      )
-    ));
+    expect(response).toEqual(
+      transactionError(new InvalidDecimalError(sellDto.tokenQuantity, zeroDecimalMemeClass.decimals))
+    );
   });
 
   it("should handle small token sell amount", async () => {
