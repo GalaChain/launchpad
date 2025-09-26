@@ -21,13 +21,15 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
-import { currency, fixture, transactionSuccess, users } from "@gala-chain/test";
+import { currency, fixture, transactionError, transactionSuccess, users } from "@gala-chain/test";
+import { ValidationFailedError } from "@gala-chain/api";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
 import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
+import { InvalidDecimalError } from "@gala-chain/chaincode";
 
 describe("sellWithNative", () => {
   let currencyClass: TokenClass;
@@ -82,6 +84,88 @@ describe("sellWithNative", () => {
       owner: users.testUser1.identityKey,
       quantity: new BigNumber("1000") // User has some CURRENCY tokens
     });
+  });
+
+  it("should reject sell when meme token has 0 decimals and bonding curve produces fractional quantity", async () => {
+    // Given - Setup meme token with 0 decimals to force decimal precision error
+    const zeroDecimalMemeTokenClass = plainToInstance(TokenClass, {
+      ...currency.tokenClassPlain(),
+      decimals: 0 // Integer-only meme token
+    });
+
+    // Simulate prior buys to establish sale state with native tokens
+    sale.buyToken(new BigNumber("10000"), new BigNumber("10"));
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyInstance,
+        zeroDecimalMemeTokenClass,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    // Request native tokens that will require fractional meme tokens from bonding curve
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.001"));
+    sellDto.uniqueKey = randomUniqueKey();
+    sellDto.sign(users.testUser1.privateKey);
+
+    // When
+    const response = await contract.SellWithNative(ctx, sellDto);
+
+    // Then - Expect error due to decimal precision mismatch
+    expect(response).toEqual(transactionError(
+      new InvalidDecimalError(
+        new BigNumber("9940.1186641108"),
+        zeroDecimalMemeTokenClass.decimals
+      )
+    ));
+  });
+
+  it("should reject sell when native token has 0 decimals and dto contains fractional quantity", async () => {
+    // Given - Setup meme token with 0 decimals to force decimal precision error
+    const zeroDecimalLaunchpadGalaClass = plainToInstance(TokenClass, {
+      ...launchpadgala.tokenClassPlain(),
+      decimals: 0 // Integer-only meme token
+    });
+
+    // Simulate prior buys to establish sale state with native tokens
+    sale.buyToken(new BigNumber("10000"), new BigNumber("10"));
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        zeroDecimalLaunchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    // Request native tokens that will require fractional meme tokens from bonding curve
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.001"));
+    sellDto.uniqueKey = randomUniqueKey();
+    sellDto.sign(users.testUser1.privateKey);
+
+    // When
+    const response = await contract.SellWithNative(ctx, sellDto);
+
+    // Then - Expect error due to decimal precision mismatch
+    expect(response).toEqual(transactionError(
+      new InvalidDecimalError(
+        sellDto.nativeTokenQuantity,
+        zeroDecimalLaunchpadGalaClass.decimals
+      )
+    ));
   });
 
   it("should sell tokens for native currency successfully", async () => {
