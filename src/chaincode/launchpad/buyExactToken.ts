@@ -89,7 +89,7 @@ export async function buyExactToken(
   // Transfer transaction fees
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
   if (launchpadFeeAddressConfiguration && transactionFees) {
-    const totalRequired = new BigNumber(buyTokenDTO.tokenQuantity).plus(transactionFees);
+    const totalRequired = nativeTokensToBuy.plus(new BigNumber(transactionFees));
 
     const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);
     if (buyerBalance.getQuantityTotal().lt(totalRequired)) {
