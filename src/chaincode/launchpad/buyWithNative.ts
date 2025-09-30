@@ -101,7 +101,7 @@ export async function buyWithNative(
   // Check for slippage condition
   if (buyTokenDTO.expectedToken && buyTokenDTO.expectedToken.comparedTo(tokensToBuy) > 0) {
     throw new SlippageToleranceExceededError(
-      "Tokens expected from this operation are more than the actual amount that will be provided."
+      `expected ${buyTokenDTO.expectedToken.toString()}, but only ${tokensToBuy.toString()} tokens can be provided. Reduce the expected amount or adjust your slippage tolerance.`
     );
   }
 

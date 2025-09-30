@@ -82,7 +82,7 @@ export async function buyExactToken(
   // Ensure the expected native token amount is not less than the actual amount required
   if (buyTokenDTO.expectedNativeToken && buyTokenDTO.expectedNativeToken.comparedTo(nativeTokensToBuy) < 0) {
     throw new SlippageToleranceExceededError(
-      "Gala tokens expected to perform this operation are less than the actual amount required."
+      `expected ${buyTokenDTO.expectedNativeToken.toString()}, but at least ${nativeTokensToBuy.toString()} are required to complete this operation. Increase the expected amount or adjust your slippage tolerance.`
     );
   }
 

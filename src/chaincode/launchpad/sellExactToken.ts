@@ -67,7 +67,7 @@ export async function sellExactToken(
     sellTokenDTO.expectedNativeToken.comparedTo(nativeTokensToProvide) > 0
   ) {
     throw new SlippageToleranceExceededError(
-      "Expected Gala tokens from this operation exceeds the actual amount that will be provided."
+      `expected ${sellTokenDTO.expectedNativeToken.toString()}, but only ${nativeTokensToProvide.toString()} tokens can be provided. Reduce the expected amount or adjust your slippage tolerance.`
     );
   }
 
