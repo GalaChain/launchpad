@@ -83,7 +83,7 @@ export async function sellWithNative(
   // Enforce slippage tolerance
   if (sellTokenDTO.expectedToken && sellTokenDTO.expectedToken.comparedTo(tokensToSell) < 0) {
     throw new SlippageToleranceExceededError(
-      "Token amount expected to cost for this operation is less than the the actual amount required."
+      `expected ${sellTokenDTO.expectedToken.toString()}, but at least ${tokensToSell.toString()} tokens are required. Increase the expected amount or adjust your slippage tolerance.`
     );
   }
 

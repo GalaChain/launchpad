@@ -21,7 +21,7 @@ export const ErrorCode = {
 
 export class SlippageToleranceExceededError extends ChainError {
   constructor(message: string) {
-    super(message, 412);
+    super(`Slippage tolerance exceeded: ${message}`, 412);
   }
 }
 

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 import { TokenBalance, TokenClass, TokenInstance, randomUniqueKey } from "@gala-chain/api";
-import { currency, fixture, users } from "@gala-chain/test";
+import { fixture, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
