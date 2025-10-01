@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 import {
-  GalaChainResponse,
   TokenBalance,
   TokenClass,
   TokenClassKey,
