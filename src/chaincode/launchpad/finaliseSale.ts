@@ -98,7 +98,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const poolDTO = new CreatePoolDto(
     areTokensSorted ? nativeTokenClassKey : sellingTokenClassKey,
     areTokensSorted ? sellingTokenClassKey : nativeTokenClassKey,
-    3000,
+    10000, // TODO: make this configurable
     sqrtPrice
   );
 
@@ -136,10 +136,10 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const expectedTokenDTO = new GetAddLiquidityEstimationDto(
     token0,
     token1,
-    3000,
+    10000, // TODO: make this configurable
     liquidityAmount,
-    -887220,
-    887220,
+    -887200,
+    887200,
     zeroForOne
   );
 
@@ -151,9 +151,9 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const positionDto = new AddLiquidityDTO(
     token0,
     token1,
-    3000,
-    -887220,
-    887220,
+    10000, // TODO: make this configurable
+    -887200,
+    887200,
     amount0,
     amount1,
     amount0.times(0.9999999),
