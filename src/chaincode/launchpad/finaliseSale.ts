@@ -136,7 +136,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const expectedTokenDTO = new GetAddLiquidityEstimationDto(
     token0,
     token1,
-    3000,
+    10000, // TODO: make this configurable
     liquidityAmount,
     -887220,
     887220,
@@ -151,7 +151,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const positionDto = new AddLiquidityDTO(
     token0,
     token1,
-    3000,
+    10000, // TODO: make this configurable
     -887220,
     887220,
     amount0,
