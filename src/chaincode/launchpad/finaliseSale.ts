@@ -98,7 +98,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const poolDTO = new CreatePoolDto(
     areTokensSorted ? nativeTokenClassKey : sellingTokenClassKey,
     areTokensSorted ? sellingTokenClassKey : nativeTokenClassKey,
-    3000,
+    10000, // TODO: make this configurable
     sqrtPrice
   );
 
