@@ -138,8 +138,8 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     token1,
     10000, // TODO: make this configurable
     liquidityAmount,
-    -887200,
-    887200,
+    -886800,
+    886800,
     zeroForOne
   );
 
@@ -152,8 +152,8 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     token0,
     token1,
     10000, // TODO: make this configurable
-    -887200,
-    887200,
+    -886800,
+    886800,
     amount0,
     amount1,
     amount0.times(0.9999999),
