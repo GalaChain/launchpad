@@ -16,7 +16,7 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { ExactTokenQuantityDto } from "../../api/types";
+import { ExactTokenQuantityDto, TradeCalculationResDto } from "../../api/types";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
 import { calculateTransactionFee } from "./fees";
 
@@ -31,12 +31,12 @@ import { calculateTransactionFee } from "./fees";
  * @param buyTokenDTO - The data transfer object containing the sale address
  *                      and the exact amount of tokens to be purchased.
  *
- * @returns A promise that resolves to a string representing the calculated amount of
- *          native tokens required for the purchase, rounded up to 8 decimal places.
+ * @returns A promise that resolves to a TradeCalculationResDto object containing the calculated
+ * quantity of native tokens required for the purchase, the original quantity of tokens used, and extra fees.
  *
  * @throws Error if the calculation encounters an invalid state or data.
  */
-export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: ExactTokenQuantityDto) {
+export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: ExactTokenQuantityDto): Promise<TradeCalculationResDto> {
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
@@ -44,6 +44,7 @@ export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: Exac
   const basePrice = new Decimal(sale.fetchBasePrice());
   const { exponentFactor, euler, decimals } = getBondingConstants();
 
+  // Adjust tokensToBuy if user is trying to buy more tokens than the total supply
   if (tokensToBuy.add(totalTokensSold).greaterThan(new Decimal("1e+7"))) {
     tokensToBuy = new Decimal(sale.sellingTokenQuantity);
   }
@@ -63,6 +64,7 @@ export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: Exac
 
   const roundedPrice = price.toDecimalPlaces(8, Decimal.ROUND_UP).toFixed();
   return {
+    originalQuantity: tokensToBuy.toFixed(),
     calculatedQuantity: roundedPrice,
     extraFees: {
       reverseBondingCurve: "0",

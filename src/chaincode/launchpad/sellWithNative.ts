@@ -73,6 +73,7 @@ export async function sellWithNative(
   // Calculate how many tokens need to be sold to get the requested native amount
   const callMemeTokenInResult = await callMemeTokenIn(ctx, sellTokenDTO);
   const transactionFees = callMemeTokenInResult.extraFees.transactionFees;
+  const nativeTokensPayout = new BigNumber(callMemeTokenInResult.originalQuantity);
   const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity).decimalPlaces(
     sellingToken.decimals
   );
@@ -92,7 +93,7 @@ export async function sellWithNative(
   await payReverseBondingCurveFee(
     ctx,
     sale,
-    sellTokenDTO.nativeTokenQuantity,
+    nativeTokensPayout,
     sellTokenDTO.extraFees?.maxAcceptableReverseBondingCurveFee
   );
 
@@ -124,7 +125,7 @@ export async function sellWithNative(
     from: sellTokenDTO.vaultAddress,
     to: ctx.callingUser,
     tokenInstanceKey: nativeToken,
-    quantity: sellTokenDTO.nativeTokenQuantity,
+    quantity: nativeTokensPayout,
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: sellTokenDTO.vaultAddress,
@@ -133,7 +134,7 @@ export async function sellWithNative(
   });
 
   // Update internal sale tracking
-  sale.sellToken(tokensToSell, sellTokenDTO.nativeTokenQuantity);
+  sale.sellToken(tokensToSell, nativeTokensPayout);
   await putChainObject(ctx, sale);
 
   const token = await fetchTokenClass(ctx, sale.sellingToken);
@@ -142,7 +143,7 @@ export async function sellWithNative(
     totalFees: new BigNumber(transactionFees)
       .plus(sellTokenDTO.extraFees?.maxAcceptableReverseBondingCurveFee ?? 0)
       .toFixed(),
-    outputQuantity: sellTokenDTO.nativeTokenQuantity.toFixed(),
+    outputQuantity: nativeTokensPayout.toFixed(),
     tokenName: token.name,
     tradeType: "Sell",
     vaultAddress: sellTokenDTO.vaultAddress,

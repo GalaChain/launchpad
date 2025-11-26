@@ -87,7 +87,7 @@ describe("sellExactToken", () => {
 
   it("should sell exact token amount successfully", async () => {
     // Given
-    sale.buyToken(new BigNumber("1000"), new BigNumber("50")); // Users bought tokens, sale now has GALA
+    sale.buyToken(new BigNumber("1000"), new BigNumber("100")); // Users bought tokens, sale now has GALA
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -162,7 +162,7 @@ describe("sellExactToken", () => {
     });
 
     // Simulate prior buys to establish sale state
-    sale.buyToken(new BigNumber("5000"), new BigNumber("100"));
+    sale.buyToken(new BigNumber("5000"), new BigNumber("101"));
 
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
@@ -224,7 +224,7 @@ describe("sellExactToken", () => {
 
   it("should handle sell with expected native token parameter", async () => {
     // Given
-    sale.buyToken(new BigNumber("800"), new BigNumber("40")); // Users bought tokens, sale now has GALA
+    sale.buyToken(new BigNumber("800"), new BigNumber("50")); // Users bought tokens, sale now has GALA
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(
@@ -254,7 +254,7 @@ describe("sellExactToken", () => {
 
   it("should handle large token sell amount", async () => {
     // Given
-    sale.buyToken(new BigNumber("2000"), new BigNumber("100")); // Users bought tokens, sale now has GALA
+    sale.buyToken(new BigNumber("2000"), new BigNumber("500")); // Users bought tokens, sale now has GALA
     const { ctx, contract } = fixture(LaunchpadContract)
       .registeredUsers(users.testUser1)
       .savedState(

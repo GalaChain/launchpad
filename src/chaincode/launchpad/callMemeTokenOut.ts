@@ -16,7 +16,7 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
+import { LaunchpadSale, NativeTokenQuantityDto, TradeCalculationResDto } from "../../api/types";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
 import { calculateTransactionFee } from "./fees";
 
@@ -31,12 +31,12 @@ import { calculateTransactionFee } from "./fees";
  * @param buyTokenDTO - The data transfer object containing the sale address
  *                      and the amount of native tokens to spend for the purchase.
  *
- * @returns A promise that resolves to a string representing the calculated amount of
- *          tokens to be received, rounded down to 18 decimal places.
+ * @returns A promise that resolves to a TradeCalculationResDto object containing the calculated
+ * quantity of tokens to be received, the original quantity of native tokens used, and extra fees.
  *
  * @throws Error if the calculation results in an invalid state.
  */
-export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: NativeTokenQuantityDto) {
+export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: NativeTokenQuantityDto): Promise<TradeCalculationResDto> {
   // Convert input amount to Decimal
   let nativeTokens = new Decimal(buyTokenDTO.nativeTokenQuantity.toString());
 
@@ -81,6 +81,7 @@ export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: Nativ
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
 
   return {
+    originalQuantity: nativeTokens.toFixed(),
     calculatedQuantity: roundedResult.toFixed(),
     extraFees: {
       reverseBondingCurve: "0",

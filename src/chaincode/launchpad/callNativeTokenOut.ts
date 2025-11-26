@@ -16,11 +16,11 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { ExactTokenQuantityDto, LaunchpadSale } from "../../api/types";
+import { ExactTokenQuantityDto, LaunchpadSale, TradeCalculationResDto } from "../../api/types";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
 import { calculateReverseBondingCurveFee, calculateTransactionFee } from "./fees";
 
-function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigNumber) {
+function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigNumber): [string, string] {
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
   let tokensToSell = new Decimal(tokensToSellBn.toString());
@@ -45,7 +45,7 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
   const price = constantFactor.mul(differenceOfExponentials);
   const roundedPrice = price.toDecimalPlaces(8, Decimal.ROUND_DOWN);
 
-  return roundedPrice.toFixed();
+  return [tokensToSell.toFixed(), roundedPrice.toFixed()];
 }
 
 /**
@@ -59,23 +59,30 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
  * @param sellTokenDTO - The data transfer object containing the sale address
  *                       and the exact amount of tokens to be sold.
  *
- * @returns A promise that resolves to a string representing the calculated amount of
- *          native tokens to be received, rounded down to 8 decimal places.
+ * @returns A promise that resolves to a TradeCalculationResDto object containing the calculated
+ * quantity of native tokens received, the quantity of tokens required, and extra fees.
  *
  * @throws DefaultError if the calculated new total tokens sold is less than zero
  *                      or if the input amount is invalid.
  */
-export async function callNativeTokenOut(ctx: GalaChainContext, sellTokenDTO: ExactTokenQuantityDto) {
+export async function callNativeTokenOut(
+  ctx: GalaChainContext,
+  sellTokenDTO: ExactTokenQuantityDto
+): Promise<TradeCalculationResDto> {
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
-  const nativeTokensReceived = calculateNativeTokensReceived(sale, sellTokenDTO.tokenQuantity);
+  const [originalQuantity, calculatedQuantity] = calculateNativeTokensReceived(
+    sale,
+    sellTokenDTO.tokenQuantity
+  );
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
 
   return {
-    calculatedQuantity: nativeTokensReceived,
+    originalQuantity: originalQuantity,
+    calculatedQuantity: calculatedQuantity,
     extraFees: {
-      reverseBondingCurve: calculateReverseBondingCurveFee(sale, BigNumber(nativeTokensReceived)).toString(),
+      reverseBondingCurve: calculateReverseBondingCurveFee(sale, BigNumber(calculatedQuantity)).toString(),
       transactionFees: calculateTransactionFee(
-        BigNumber(nativeTokensReceived),
+        BigNumber(calculatedQuantity),
         launchpadFeeAddressConfiguration?.feeAmount
       )
     }

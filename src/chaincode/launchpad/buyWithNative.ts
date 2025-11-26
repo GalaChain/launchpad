@@ -23,11 +23,10 @@ import {
 } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { ExactTokenQuantityDto, LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
+import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
 import { callMemeTokenOut } from "./callMemeTokenOut";
-import { callNativeTokenIn } from "./callNativeTokenIn";
 import { finalizeSale } from "./finaliseSale";
 
 /**
@@ -56,11 +55,11 @@ export async function buyWithNative(
 
   // Fetch and validate sale state
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
-  const tokensLeftInVault = new BigNumber(sale.sellingTokenQuantity);
 
   // Calculate how many tokens the user can buy and fee info
   const callMemeTokenOutResult = await callMemeTokenOut(ctx, buyTokenDTO);
-  let transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
+  const transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
+  const nativeTokensRequired = new BigNumber(callMemeTokenOutResult.originalQuantity);
   let tokensToBuy = new BigNumber(callMemeTokenOutResult.calculatedQuantity);
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
@@ -79,17 +78,7 @@ export async function buyWithNative(
 
   tokensToBuy = tokensToBuy.decimalPlaces(memeTokenClass.decimals);
 
-  // If vault has fewer tokens than what user wants to buy, cap the purchase
-  if (tokensLeftInVault.comparedTo(tokensToBuy) <= 0) {
-    tokensToBuy = tokensLeftInVault.decimalPlaces(memeTokenClass.decimals);
-    const nativeTokensRequiredToBuyDto = new ExactTokenQuantityDto(buyTokenDTO.vaultAddress, tokensToBuy);
-    const callNativeTokenInResult = await callNativeTokenIn(ctx, nativeTokensRequiredToBuyDto);
-    transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
-    buyTokenDTO.nativeTokenQuantity = new BigNumber(callNativeTokenInResult.calculatedQuantity);
-    isSaleFinalized = true;
-  }
-
-  // Finalize sale if market cap is reached
+  // If native tokens required exceeds the market cap, the sale can be finalized
   if (
     buyTokenDTO.nativeTokenQuantity
       .plus(new BigNumber(sale.nativeTokenQuantity))
@@ -108,7 +97,7 @@ export async function buyWithNative(
   // Transfer transaction fees to launchpad fee address
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
   if (launchpadFeeAddressConfiguration && transactionFees) {
-    const totalRequired = new BigNumber(buyTokenDTO.nativeTokenQuantity).plus(transactionFees);
+    const totalRequired = nativeTokensRequired.plus(transactionFees);
 
     const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);
     if (buyerBalance.getQuantityTotal().lt(totalRequired)) {
@@ -132,7 +121,7 @@ export async function buyWithNative(
     from: ctx.callingUser,
     to: buyTokenDTO.vaultAddress,
     tokenInstanceKey: nativeToken,
-    quantity: buyTokenDTO.nativeTokenQuantity,
+    quantity: nativeTokensRequired,
     allowancesToUse: [],
     authorizedOnBehalf: undefined
   });
@@ -151,7 +140,7 @@ export async function buyWithNative(
   });
 
   // Update sale object with purchase data
-  sale.buyToken(tokensToBuy, buyTokenDTO.nativeTokenQuantity);
+  sale.buyToken(tokensToBuy, nativeTokensRequired);
   await putChainObject(ctx, sale);
 
   // Finalize sale if it's complete
@@ -161,7 +150,7 @@ export async function buyWithNative(
 
   const token = await fetchTokenClass(ctx, sale.sellingToken);
   return {
-    inputQuantity: buyTokenDTO.nativeTokenQuantity.toFixed(),
+    inputQuantity: nativeTokensRequired.toFixed(),
     totalFees: transactionFees,
     outputQuantity: tokensToBuy.toFixed(),
     tokenName: token.name,

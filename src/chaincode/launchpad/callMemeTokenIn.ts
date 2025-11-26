@@ -17,11 +17,14 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
+import { LaunchpadSale, NativeTokenQuantityDto, TradeCalculationResDto } from "../../api/types";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
 import { calculateReverseBondingCurveFee, calculateTransactionFee } from "./fees";
 
-function calculateMemeTokensRequired(sale: LaunchpadSale, requestedNativeTokenQuantity: BigNumber) {
+function calculateMemeTokensRequired(
+  sale: LaunchpadSale,
+  requestedNativeTokenQuantity: BigNumber
+): [string, string] {
   const totalTokensSold = new Decimal(sale.fetchTokensSold()); // current tokens sold / x
   let nativeTokens = new Decimal(requestedNativeTokenQuantity.toString()); // native tokens used to buy / y
   const basePrice = new Decimal(sale.fetchBasePrice()); // base price / a
@@ -45,7 +48,7 @@ function calculateMemeTokensRequired(sale: LaunchpadSale, requestedNativeTokenQu
   const tokensSent = totalTokensSold.minus(lnAdjustedExp.mul(decimals).div(exponentFactor));
   const roundedTokenSent = tokensSent.toDecimalPlaces(18, Decimal.ROUND_UP);
 
-  return roundedTokenSent.toFixed();
+  return [nativeTokens.toFixed(), roundedTokenSent.toFixed()];
 }
 
 /**
@@ -61,17 +64,25 @@ function calculateMemeTokensRequired(sale: LaunchpadSale, requestedNativeTokenQu
  *   - `nativeTokenAmount`: The amount of native tokens to be recieved from sale.
  *   - `expectedToken` (optional): The expected amount of tokens to be sold.
  *
- * @returns A promise that resolves to a string representing the calculated amount of
- *          tokens to be sent, rounded up to 18 decimal places.
+ * @returns A promise that resolves to a TradeCalculationResDto object containing the calculated
+ * quantity of tokens to be sent, the original quantity of native tokens used, and extra fees.
  *
  * @throws Error if the calculation results in an invalid amount (e.g., `InvalidAmountError`).
  */
-export async function callMemeTokenIn(ctx: GalaChainContext, sellTokenDTO: NativeTokenQuantityDto) {
+export async function callMemeTokenIn(
+  ctx: GalaChainContext,
+  sellTokenDTO: NativeTokenQuantityDto
+): Promise<TradeCalculationResDto> {
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+  const [originalQuantity, calculatedQuantity] = calculateMemeTokensRequired(
+    sale,
+    sellTokenDTO.nativeTokenQuantity
+  );
 
   return {
-    calculatedQuantity: calculateMemeTokensRequired(sale, sellTokenDTO.nativeTokenQuantity),
+    originalQuantity: originalQuantity,
+    calculatedQuantity: calculatedQuantity,
     extraFees: {
       reverseBondingCurve: calculateReverseBondingCurveFee(sale, sellTokenDTO.nativeTokenQuantity).toString(),
       transactionFees: calculateTransactionFee(
