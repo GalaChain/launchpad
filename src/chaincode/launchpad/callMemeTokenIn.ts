@@ -27,7 +27,7 @@ function calculateMemeTokensRequired(
 ): [string, string] {
   const totalTokensSold = new Decimal(sale.fetchTokensSold()); // current tokens sold / x
   let nativeTokens = new Decimal(requestedNativeTokenQuantity.toString()); // native tokens used to buy / y
-  const basePrice = new Decimal(sale.fetchBasePrice()); // base price / a
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE); // base price / a
   const { exponentFactor, euler, decimals } = getBondingConstants();
 
   const nativeTokenInVault = new Decimal(sale.nativeTokenQuantity);

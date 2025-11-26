@@ -165,11 +165,6 @@ export class LaunchpadSale extends ChainObject {
     return nativeTokenInVault.toString();
   }
 
-  public fetchBasePrice() {
-    const basePriceBigNumber = new BigNumber(this.basePrice);
-    return basePriceBigNumber.toString();
-  }
-
   public finalizeSale() {
     this.saleStatus = SaleStatus.END;
     this.nativeTokenQuantity = "0";

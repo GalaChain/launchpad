@@ -16,7 +16,7 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { ExactTokenQuantityDto, TradeCalculationResDto } from "../../api/types";
+import { ExactTokenQuantityDto, LaunchpadSale, TradeCalculationResDto } from "../../api/types";
 import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
 import { calculateTransactionFee } from "./fees";
 
@@ -41,7 +41,7 @@ export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: Exac
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
   let tokensToBuy = new Decimal(buyTokenDTO.tokenQuantity.toString());
-  const basePrice = new Decimal(sale.fetchBasePrice());
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
   const { exponentFactor, euler, decimals } = getBondingConstants();
 
   // Adjust tokensToBuy if user is trying to buy more tokens than the total supply

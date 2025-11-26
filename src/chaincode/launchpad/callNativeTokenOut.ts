@@ -24,7 +24,7 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
   let tokensToSell = new Decimal(tokensToSellBn.toString());
-  const basePrice = new Decimal(sale.fetchBasePrice());
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
   const { exponentFactor, euler, decimals } = getBondingConstants();
 
   let newTotalTokensSold = totalTokensSold.minus(tokensToSell);

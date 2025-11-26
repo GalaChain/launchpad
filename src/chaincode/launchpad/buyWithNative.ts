@@ -96,7 +96,7 @@ export async function buyWithNative(
 
   // Transfer transaction fees to launchpad fee address
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && transactionFees) {
+  if  (launchpadFeeAddressConfiguration && new BigNumber(transactionFees).gt(0)) {
     const totalRequired = nativeTokensRequired.plus(transactionFees);
 
     const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);

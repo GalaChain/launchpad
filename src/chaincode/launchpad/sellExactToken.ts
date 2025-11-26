@@ -83,7 +83,7 @@ export async function sellExactToken(
 
   // Transfer launchpad transaction fee if applicable
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && transactionFees) {
+  if  (launchpadFeeAddressConfiguration && new BigNumber(transactionFees).gt(0)) {
     await transferToken(ctx, {
       from: ctx.callingUser,
       to: launchpadFeeAddressConfiguration.feeAddress,

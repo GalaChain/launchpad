@@ -200,7 +200,7 @@ function calculateFinalLaunchpadPrice(
   areTokensSorted: boolean
 ): { sqrtPrice: BigNumber; finalPrice: BigNumber } {
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
-  const basePrice = new Decimal(sale.fetchBasePrice());
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
   const { exponentFactor, euler, decimals } = getBondingConstants();
 
   const exponent = exponentFactor.mul(totalTokensSold).div(decimals);
