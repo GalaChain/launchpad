@@ -137,7 +137,7 @@ export class LaunchpadContract extends GalaContract {
   @Submit({
     in: ConfigureLaunchpadFeeAddressDto,
     out: LaunchpadFeeConfig,
-    allowedOrgs: ["CuratorOrg"]
+    allowedOrgs: [process.env.CURATOR_ORG_MSP ?? "CuratorOrg"]
   })
   public async ConfigureLaunchpadFeeAddress(
     ctx: GalaChainContext,
@@ -149,7 +149,7 @@ export class LaunchpadContract extends GalaContract {
   @Submit({
     in: FinalizeTokenAllocationDto,
     out: LaunchpadFinalizeFeeAllocation,
-    allowedOrgs: ["CuratorOrg"]
+    allowedOrgs: [process.env.CURATOR_ORG_MSP ?? "CuratorOrg"]
   })
   public async FinalizeTokenAllocation(
     ctx: GalaChainContext,
@@ -209,7 +209,7 @@ export class LaunchpadContract extends GalaContract {
   @Evaluate({
     in: ChainCallDTO,
     out: LaunchpadFeeConfig,
-    allowedOrgs: ["CuratorOrg"]
+    allowedOrgs: [process.env.CURATOR_ORG_MSP ?? "CuratorOrg"]
   })
   public async FetchLaunchpadFeeConfig(
     ctx: GalaChainContext,

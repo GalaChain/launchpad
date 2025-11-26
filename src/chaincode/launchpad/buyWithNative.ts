@@ -84,7 +84,7 @@ export async function buyWithNative(
     tokensToBuy = tokensLeftInVault.decimalPlaces(memeTokenClass.decimals);
     const nativeTokensRequiredToBuyDto = new ExactTokenQuantityDto(buyTokenDTO.vaultAddress, tokensToBuy);
     const callNativeTokenInResult = await callNativeTokenIn(ctx, nativeTokensRequiredToBuyDto);
-    transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
+    transactionFees = callNativeTokenInResult.extraFees.transactionFees;
     buyTokenDTO.nativeTokenQuantity = new BigNumber(callNativeTokenInResult.calculatedQuantity);
     isSaleFinalized = true;
   }
@@ -107,7 +107,7 @@ export async function buyWithNative(
 
   // Transfer transaction fees to launchpad fee address
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && transactionFees) {
+  if  (launchpadFeeAddressConfiguration && new BigNumber(transactionFees).gt(0)) {
     const totalRequired = new BigNumber(buyTokenDTO.nativeTokenQuantity).plus(transactionFees);
 
     const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);
