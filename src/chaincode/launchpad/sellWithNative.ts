@@ -99,7 +99,7 @@ export async function sellWithNative(
 
   // Transfer launchpad transaction fees if applicable
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if  (launchpadFeeAddressConfiguration && new BigNumber(transactionFees).gt(0)) {
+  if (launchpadFeeAddressConfiguration && new BigNumber(transactionFees).gt(0)) {
     await transferToken(ctx, {
       from: ctx.callingUser,
       to: launchpadFeeAddressConfiguration.feeAddress,

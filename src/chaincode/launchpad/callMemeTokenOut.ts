@@ -36,7 +36,10 @@ import { calculateTransactionFee } from "./fees";
  *
  * @throws Error if the calculation results in an invalid state.
  */
-export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: NativeTokenQuantityDto): Promise<TradeCalculationResDto> {
+export async function callMemeTokenOut(
+  ctx: GalaChainContext,
+  buyTokenDTO: NativeTokenQuantityDto
+): Promise<TradeCalculationResDto> {
   // Convert input amount to Decimal
   let nativeTokens = new Decimal(buyTokenDTO.nativeTokenQuantity.toString());
 

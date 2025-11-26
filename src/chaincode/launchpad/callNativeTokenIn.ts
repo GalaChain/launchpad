@@ -36,7 +36,10 @@ import { calculateTransactionFee } from "./fees";
  *
  * @throws Error if the calculation encounters an invalid state or data.
  */
-export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: ExactTokenQuantityDto): Promise<TradeCalculationResDto> {
+export async function callNativeTokenIn(
+  ctx: GalaChainContext,
+  buyTokenDTO: ExactTokenQuantityDto
+): Promise<TradeCalculationResDto> {
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
