@@ -49,12 +49,14 @@ export class LaunchpadSale extends ChainObject {
   @IsNotEmpty()
   public saleStatus: SaleStatus;
 
-  @Type(() => TokenInstanceKey)
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => TokenInstanceKey)
   public sellingToken: TokenInstanceKey;
 
-  @Type(() => TokenInstanceKey)
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => TokenInstanceKey)
   public nativeToken: TokenInstanceKey;
 
   @IsString()

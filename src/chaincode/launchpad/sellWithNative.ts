@@ -66,17 +66,17 @@ export async function sellWithNative(
   const nativeTokensLeftInVault = new BigNumber(sale.nativeTokenQuantity);
 
   // Cap nativeTokenQuantity to the vault balance if the requested amount exceeds it
-  if (nativeTokensLeftInVault.comparedTo(sellTokenDTO.nativeTokenQuantity) < 0) {
+  if (nativeTokensLeftInVault.isLessThan(sellTokenDTO.nativeTokenQuantity)) {
     throw new ValidationFailedError("Not enough GALA in sale contract to carry out this operation.");
   }
 
   // Calculate how many tokens need to be sold to get the requested native amount
   const callMemeTokenInResult = await callMemeTokenIn(ctx, sellTokenDTO);
-  const transactionFees = callMemeTokenInResult.extraFees.transactionFees;
-  const nativeTokensPayout = new BigNumber(callMemeTokenInResult.originalQuantity);
+  const transactionFees = callMemeTokenInResult.extraFees.transactionFees; // transaction fees
+  const nativeTokensPayout = new BigNumber(callMemeTokenInResult.originalQuantity); // number of native tokens user wants to receive
   const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity).decimalPlaces(
     sellingToken.decimals
-  );
+  ); // number of tokens user needs to sell
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();

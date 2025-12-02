@@ -49,9 +49,9 @@ export async function sellExactToken(
 
   // Determine how much native token (e.g., GALA) the user will receive for the exact token quantity
   const callNativeTokenOutResult = await callNativeTokenOut(ctx, sellTokenDTO);
-  const tokensBeingSold = new BigNumber(callNativeTokenOutResult.originalQuantity);
-  const nativeTokensPayout = new BigNumber(callNativeTokenOutResult.calculatedQuantity);
-  const transactionFees = callNativeTokenOutResult.extraFees.transactionFees;
+  const tokensBeingSold = new BigNumber(callNativeTokenOutResult.originalQuantity); // number of tokens user wants to sell
+  const nativeTokensPayout = new BigNumber(callNativeTokenOutResult.calculatedQuantity); // number of native tokens user will receive
+  const transactionFees = new BigNumber(callNativeTokenOutResult.extraFees.transactionFees); // transaction fees
 
   const nativeTokensLeftInVault = new BigNumber(sale.nativeTokenQuantity);
   const nativeToken = sale.fetchNativeTokenInstanceKey();
@@ -65,7 +65,7 @@ export async function sellExactToken(
   // Enforce slippage tolerance: expected amount must not be greater than what will actually be received
   if (
     sellTokenDTO.expectedNativeToken &&
-    sellTokenDTO.expectedNativeToken.comparedTo(nativeTokensPayout) > 0
+    sellTokenDTO.expectedNativeToken.isGreaterThan(nativeTokensPayout)
   ) {
     throw new SlippageToleranceExceededError(
       `expected ${sellTokenDTO.expectedNativeToken.toString()}, but only ${nativeTokensPayout.toString()} tokens can be provided. Reduce the expected amount or adjust your slippage tolerance.`
@@ -83,12 +83,15 @@ export async function sellExactToken(
 
   // Transfer launchpad transaction fee if applicable
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && new BigNumber(transactionFees).gt(0)) {
+  // check if transaction fees is greater than 0 and if the launchpad fee address configuration where
+  // the fees are sent to is defined
+  if (launchpadFeeAddressConfiguration && transactionFees.gt(0)) {
+    // transfer transaction fees to the launchpad fee address
     await transferToken(ctx, {
       from: ctx.callingUser,
       to: launchpadFeeAddressConfiguration.feeAddress,
       tokenInstanceKey: nativeToken,
-      quantity: new BigNumber(transactionFees),
+      quantity: transactionFees,
       allowancesToUse: [],
       authorizedOnBehalf: undefined
     });
@@ -124,7 +127,7 @@ export async function sellExactToken(
   const token = await fetchTokenClass(ctx, sale.sellingToken);
   return {
     inputQuantity: tokensBeingSold.toFixed(),
-    totalFees: new BigNumber(transactionFees)
+    totalFees: transactionFees
       .plus(sellTokenDTO.extraFees?.maxAcceptableReverseBondingCurveFee ?? 0)
       .toFixed(),
     outputQuantity: nativeTokensPayout.toFixed(),

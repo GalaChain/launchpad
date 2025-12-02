@@ -185,7 +185,7 @@ describe("buyWithNative", () => {
 
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "0.00825575",
-      totalFees: "0.00000000",
+      totalFees: "0",
       totalTokenSold: "500",
       outputQuantity: "500",
       tokenName: "AUTOMATEDTESTCOIN",

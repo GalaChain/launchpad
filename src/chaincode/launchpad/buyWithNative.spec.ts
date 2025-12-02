@@ -188,7 +188,7 @@ describe("buyWithNative", () => {
 
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "150",
-      totalFees: "0.00000000",
+      totalFees: "0",
       totalTokenSold: "2101667.8890651635",
       outputQuantity: "2101667.8890651635",
       tokenName: "AUTOMATEDTESTCOIN",
@@ -234,7 +234,7 @@ describe("buyWithNative", () => {
 
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "1000",
-      totalFees: "320.00000000",
+      totalFees: "320",
       totalTokenSold: "3663321.3628130557",
       outputQuantity: "3663321.3628130557",
       tokenName: "AUTOMATEDTESTCOIN",

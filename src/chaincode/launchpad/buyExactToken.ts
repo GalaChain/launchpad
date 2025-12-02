@@ -56,22 +56,21 @@ export async function buyExactToken(
 
   // Calculate the required amount of native tokens to buy the specified token amount
   const callNativeTokenInResult = await callNativeTokenIn(ctx, buyTokenDTO);
-  const transactionFees = callNativeTokenInResult.extraFees.transactionFees;
-  const tokensToBuy = new BigNumber(callNativeTokenInResult.originalQuantity);
-  const nativeTokensRequired = new BigNumber(callNativeTokenInResult.calculatedQuantity);
+  const tokensToBuy = new BigNumber(callNativeTokenInResult.originalQuantity); // number of tokens user wants to buy
+  const nativeTokensRequired = new BigNumber(callNativeTokenInResult.calculatedQuantity); // number of native tokens required to buy the tokens
+  const transactionFees = new BigNumber(callNativeTokenInResult.extraFees.transactionFees); // transaction fees
+
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
   // If the requested token amount exceeds what's available, finalise the sale
+  // Token amounts have been adjusted in the callNativeTokenIn function if they exceed the total supply
   if (tokensLeftInVault.lte(buyTokenDTO.tokenQuantity)) {
     isSaleFinalized = true;
   }
 
   // Ensure the expected native token amount is not less than the actual amount required
-  if (
-    buyTokenDTO.expectedNativeToken &&
-    buyTokenDTO.expectedNativeToken.comparedTo(nativeTokensRequired) < 0
-  ) {
+  if (buyTokenDTO.expectedNativeToken && buyTokenDTO.expectedNativeToken.isLessThan(nativeTokensRequired)) {
     throw new SlippageToleranceExceededError(
       `expected ${buyTokenDTO.expectedNativeToken.toString()}, but at least ${nativeTokensRequired.toString()} are required to complete this operation. Increase the expected amount or adjust your slippage tolerance.`
     );
@@ -79,20 +78,25 @@ export async function buyExactToken(
 
   // Transfer transaction fees
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && new BigNumber(transactionFees).gt(0)) {
-    const totalRequired = nativeTokensRequired.plus(new BigNumber(transactionFees));
-
+  // check if transaction fees is greater than 0 and if the launchpad fee address configuration where
+  // the fees are sent to is defined
+  if (launchpadFeeAddressConfiguration && transactionFees.gt(0)) {
+    const totalRequired = nativeTokensRequired.plus(transactionFees);
     const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);
+
+    // check if the buyer has sufficient balance to pay the transaction fees
     if (buyerBalance.getQuantityTotal().lt(totalRequired)) {
       throw new ValidationFailedError(
         `Insufficient balance: Total amount required including fee is ${totalRequired}`
       );
     }
+
+    // transfer transaction fees to the launchpad fee address
     await transferToken(ctx, {
       from: ctx.callingUser,
       to: launchpadFeeAddressConfiguration.feeAddress,
       tokenInstanceKey: nativeToken,
-      quantity: new BigNumber(transactionFees),
+      quantity: transactionFees,
       allowancesToUse: [],
       authorizedOnBehalf: undefined
     });
@@ -134,7 +138,7 @@ export async function buyExactToken(
   const token = await fetchTokenClass(ctx, sale.sellingToken);
   return {
     inputQuantity: nativeTokensRequired.toFixed(),
-    totalFees: transactionFees,
+    totalFees: transactionFees.toFixed(),
     outputQuantity: tokensToBuy.toFixed(),
     tokenName: token.name,
     tradeType: "Buy",

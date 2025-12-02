@@ -29,7 +29,7 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
 
   let newTotalTokensSold = totalTokensSold.minus(tokensToSell);
 
-  if (newTotalTokensSold.comparedTo(0) < 0) {
+  if (newTotalTokensSold.lessThan(0)) {
     tokensToSell = totalTokensSold;
     newTotalTokensSold = new Decimal(0);
   }
