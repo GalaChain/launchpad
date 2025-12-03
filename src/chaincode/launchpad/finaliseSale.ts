@@ -110,7 +110,10 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const poolInfo = await getSlot0(ctx, poolDTO);
 
   // Proceed normally if price in the pool is within an acceptable range
-  const priceCloseEnough = sqrtPrice.minus(poolInfo.sqrtPrice).abs().lte(sqrtPrice.multipliedBy(0.05));
+  const priceCloseEnough = sqrtPrice
+    .minus(poolInfo.sqrtPrice)
+    .abs()
+    .isLessThanOrEqualTo(sqrtPrice.multipliedBy(0.05));
   const expectedNativeTokenRequired = new BigNumber(sale.nativeTokenQuantity).times(
     liquidityAllocationPercentage
   );

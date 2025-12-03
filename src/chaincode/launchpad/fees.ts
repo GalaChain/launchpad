@@ -12,9 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FeeReceiptStatus } from "@gala-chain/api";
+import { FeeReceiptStatus, ValidationFailedError } from "@gala-chain/api";
 import {
   GalaChainContext,
+  fetchOrCreateBalance,
   transferToken,
   txUnixTimeToDateIndexKeys,
   writeChannelPaymentReceipt,
@@ -105,4 +106,55 @@ export async function payReverseBondingCurveFee(
 
 export function calculateTransactionFee(tokensBeingTraded: BigNumber, feeAmount?: number) {
   return tokensBeingTraded.multipliedBy(feeAmount ?? 0).toFixed(8, BigNumber.ROUND_UP);
+}
+
+/**
+ * Transfers transaction fees to the launchpad fee address if applicable.
+ * Optionally validates that the user has sufficient balance when nativeTokensRequired is provided.
+ *
+ * @param ctx - The context object providing access to the GalaChain environment.
+ * @param sale - The launchpad sale object.
+ * @param transactionFees - The transaction fees amount (as BigNumber or string).
+ * @param nativeToken - The native token instance key (returned from sale.fetchNativeTokenInstanceKey()).
+ * @param nativeTokensRequired - Optional. If provided, validates user has sufficient balance for fees + required tokens.
+ */
+export async function transferTransactionFees(
+  ctx: GalaChainContext,
+  sale: LaunchpadSale,
+  transactionFees: BigNumber | string,
+  nativeToken: ReturnType<LaunchpadSale["fetchNativeTokenInstanceKey"]>,
+  nativeTokensRequired?: BigNumber
+): Promise<void> {
+  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+  const transactionFeesBn =
+    typeof transactionFees === "string" ? new BigNumber(transactionFees) : transactionFees;
+
+  // Check if transaction fees is greater than 0 and if the launchpad fee address configuration where
+  // the fees are sent to is defined
+  if (!launchpadFeeAddressConfiguration || !transactionFeesBn.isGreaterThan(0)) {
+    return;
+  }
+
+  // If nativeTokensRequired is provided, validate user has sufficient balance
+  if (nativeTokensRequired) {
+    const totalRequired = nativeTokensRequired.plus(transactionFeesBn);
+    const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);
+
+    // Check if the buyer has sufficient balance to pay the transaction fees
+    if (buyerBalance.getQuantityTotal().isLessThan(totalRequired)) {
+      throw new ValidationFailedError(
+        `Insufficient balance: Total amount required including fee is ${totalRequired}`
+      );
+    }
+  }
+
+  // Transfer transaction fees to the launchpad fee address
+  await transferToken(ctx, {
+    from: ctx.callingUser,
+    to: launchpadFeeAddressConfiguration.feeAddress,
+    tokenInstanceKey: nativeToken,
+    quantity: transactionFeesBn,
+    allowancesToUse: [],
+    authorizedOnBehalf: undefined
+  });
 }

@@ -12,10 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { TokenClass, ValidationFailedError } from "@gala-chain/api";
+import { TokenClass } from "@gala-chain/api";
 import {
   GalaChainContext,
-  fetchOrCreateBalance,
   fetchTokenClass,
   getObjectByKey,
   putChainObject,
@@ -25,8 +24,9 @@ import BigNumber from "bignumber.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
+import { fetchAndValidateSale } from "../utils";
 import { callMemeTokenOut } from "./callMemeTokenOut";
+import { transferTransactionFees } from "./fees";
 import { finalizeSale } from "./finaliseSale";
 
 /**
@@ -82,7 +82,7 @@ export async function buyWithNative(
   if (
     buyTokenDTO.nativeTokenQuantity
       .plus(new BigNumber(sale.nativeTokenQuantity))
-      .gte(new BigNumber(LaunchpadSale.MARKET_CAP))
+      .isGreaterThanOrEqualTo(new BigNumber(LaunchpadSale.MARKET_CAP))
   ) {
     isSaleFinalized = true;
   }
@@ -95,30 +95,7 @@ export async function buyWithNative(
   }
 
   // Transfer transaction fees to launchpad fee address
-  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  // check if transaction fees is greater than 0 and if the launchpad fee address configuration where
-  // the fees are sent to is defined
-  if (launchpadFeeAddressConfiguration && transactionFees.gt(0)) {
-    const totalRequired = nativeTokensRequired.plus(transactionFees);
-    const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);
-
-    // check if the buyer has sufficient balance to pay the transaction fees
-    if (buyerBalance.getQuantityTotal().lt(totalRequired)) {
-      throw new ValidationFailedError(
-        `Insufficient balance: Total amount required including fee is ${totalRequired}`
-      );
-    }
-
-    // transfer transaction fees to the launchpad fee address
-    await transferToken(ctx, {
-      from: ctx.callingUser,
-      to: launchpadFeeAddressConfiguration.feeAddress,
-      tokenInstanceKey: nativeToken,
-      quantity: transactionFees,
-      allowancesToUse: [],
-      authorizedOnBehalf: undefined
-    });
-  }
+  await transferTransactionFees(ctx, sale, transactionFees, nativeToken, nativeTokensRequired);
 
   // Transfer native tokens from buyer to vault
   await transferToken(ctx, {

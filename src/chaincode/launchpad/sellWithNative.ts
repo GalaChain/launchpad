@@ -22,11 +22,11 @@ import {
 } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
+import { NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
+import { fetchAndValidateSale } from "../utils";
 import { callMemeTokenIn } from "./callMemeTokenIn";
-import { payReverseBondingCurveFee } from "./fees";
+import { payReverseBondingCurveFee, transferTransactionFees } from "./fees";
 
 /**
  * Executes a sale of tokens using native tokens (e.g., GALA) in exchange for the specified token amount.
@@ -52,7 +52,7 @@ export async function sellWithNative(
   sellTokenDTO: NativeTokenQuantityDto
 ): Promise<TradeResDto> {
   // Fetch and validate the sale object
-  const sale: LaunchpadSale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
+  const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
 
   const { collection, category, type, additionalKey } = sale.sellingToken;
   const sellingTokenCompositeKey = TokenClass.getCompositeKeyFromParts(TokenClass.INDEX_KEY, [
@@ -82,7 +82,7 @@ export async function sellWithNative(
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
   // Enforce slippage tolerance
-  if (sellTokenDTO.expectedToken && sellTokenDTO.expectedToken.comparedTo(tokensToSell) < 0) {
+  if (sellTokenDTO.expectedToken && sellTokenDTO.expectedToken.isLessThan(tokensToSell)) {
     throw new SlippageToleranceExceededError(
       `expected ${sellTokenDTO.expectedToken.toString()}, but at least ${tokensToSell.toString()} tokens are required. Increase the expected amount or adjust your slippage tolerance.`
     );
@@ -98,17 +98,7 @@ export async function sellWithNative(
   );
 
   // Transfer launchpad transaction fees if applicable
-  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && new BigNumber(transactionFees).gt(0)) {
-    await transferToken(ctx, {
-      from: ctx.callingUser,
-      to: launchpadFeeAddressConfiguration.feeAddress,
-      tokenInstanceKey: nativeToken,
-      quantity: new BigNumber(transactionFees),
-      allowancesToUse: [],
-      authorizedOnBehalf: undefined
-    });
-  }
+  await transferTransactionFees(ctx, sale, transactionFees, nativeToken);
 
   // Send meme tokens from user to vault
   await transferToken(ctx, {

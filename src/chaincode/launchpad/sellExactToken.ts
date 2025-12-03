@@ -18,9 +18,9 @@ import { BigNumber } from "bignumber.js";
 
 import { ExactTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
+import { fetchAndValidateSale } from "../utils";
 import { callNativeTokenOut } from "./callNativeTokenOut";
-import { payReverseBondingCurveFee } from "./fees";
+import { payReverseBondingCurveFee, transferTransactionFees } from "./fees";
 
 /**
  * Executes the sale of an exact amount of tokens for native tokens (e.g., GALA).
@@ -82,20 +82,7 @@ export async function sellExactToken(
   );
 
   // Transfer launchpad transaction fee if applicable
-  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  // check if transaction fees is greater than 0 and if the launchpad fee address configuration where
-  // the fees are sent to is defined
-  if (launchpadFeeAddressConfiguration && transactionFees.gt(0)) {
-    // transfer transaction fees to the launchpad fee address
-    await transferToken(ctx, {
-      from: ctx.callingUser,
-      to: launchpadFeeAddressConfiguration.feeAddress,
-      tokenInstanceKey: nativeToken,
-      quantity: transactionFees,
-      allowancesToUse: [],
-      authorizedOnBehalf: undefined
-    });
-  }
+  await transferTransactionFees(ctx, sale, transactionFees, nativeToken);
 
   // Transfer meme tokens from user to vault
   await transferToken(ctx, {

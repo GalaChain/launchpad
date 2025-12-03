@@ -39,7 +39,7 @@ function calculateMemeTokensRequired(
   const exp1 = euler.pow(exponent);
   const constantFactor = nativeTokens.mul(exponentFactor).div(basePrice);
 
-  if (exp1.lte(constantFactor)) {
+  if (exp1.lessThanOrEqualTo(constantFactor)) {
     throw new ValidationFailedError("Cannot sell more tokens than have been bought in this sale.");
   }
 
