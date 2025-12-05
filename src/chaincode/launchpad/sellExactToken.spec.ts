@@ -21,8 +21,7 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
-import { InvalidDecimalError } from "@gala-chain/chaincode";
-import { currency, fixture, transactionError, users } from "@gala-chain/test";
+import { currency, fixture, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
@@ -114,82 +113,6 @@ describe("sellExactToken", () => {
     expect(response.Data).toHaveProperty("outputQuantity");
     expect(response.Data).toHaveProperty("inputQuantity", "100");
     expect(response.Data).toHaveProperty("isFinalized");
-  });
-
-  it("should reject sell when native token has 0 decimals and bonding curve produces fractional quantity", async () => {
-    // Given
-    const zeroDecimalNativeClass = plainToInstance(TokenClass, {
-      ...launchpadgala.tokenClassPlain(),
-      decimals: 0 // Integer-only native token
-    });
-
-    // Simulate prior buys to establish sale state
-    sale.buyToken(new BigNumber("5000"), new BigNumber("100"));
-
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(
-        currencyClass,
-        currencyInstance,
-        zeroDecimalNativeClass,
-        launchpadGalaInstance,
-        sale,
-        salelaunchpadGalaBalance,
-        saleCurrencyBalance,
-        userlaunchpadGalaBalance,
-        userCurrencyBalance
-      );
-
-    // Choose a token quantity that will produce fractional native tokens from bonding curve
-    const sellDto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("100"));
-    sellDto.uniqueKey = randomUniqueKey();
-    const signedDto = sellDto.signed(users.testUser1.privateKey);
-
-    // When
-    const response = await contract.SellExactToken(ctx, signedDto);
-
-    // Then - Expect error due to decimal precision mismatch
-    expect(response).toEqual(
-      transactionError(new InvalidDecimalError(new BigNumber("0.00166022"), zeroDecimalNativeClass.decimals))
-    );
-  });
-
-  it("should reject sell when meme token has 0 decimals and input dto contains greater fractional precision", async () => {
-    // Given
-    const zeroDecimalMemeClass = plainToInstance(TokenClass, {
-      ...currency.tokenClassPlain(),
-      decimals: 0 // Integer-only native token
-    });
-
-    // Simulate prior buys to establish sale state
-    sale.buyToken(new BigNumber("5000"), new BigNumber("101"));
-
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(
-        zeroDecimalMemeClass,
-        currencyInstance,
-        launchpadGalaClass,
-        launchpadGalaInstance,
-        sale,
-        salelaunchpadGalaBalance,
-        saleCurrencyBalance,
-        userlaunchpadGalaBalance,
-        userCurrencyBalance
-      );
-
-    // Choose a token quantity that will produce fractional native tokens from bonding curve
-    const sellDto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("100.555"));
-    sellDto.uniqueKey = randomUniqueKey();
-    const signedDto = sellDto.signed(users.testUser1.privateKey);
-
-    // When
-    const response = await contract.SellExactToken(ctx, signedDto);
-
-    // Then - Expect error due to decimal precision mismatch
-    expect(response).toEqual(
-      transactionError(new InvalidDecimalError(sellDto.tokenQuantity, zeroDecimalMemeClass.decimals))
-    );
   });
 
   it("should handle small token sell amount", async () => {

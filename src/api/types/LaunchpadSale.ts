@@ -101,6 +101,16 @@ export class LaunchpadSale extends ChainObject {
   })
   public static BASE_PRICE = "16506671506650";
 
+  @JSONSchema({
+    description: "The decimals of the selling token."
+  })
+  public static SELLING_TOKEN_DECIMALS = 18;
+
+  @JSONSchema({
+    description: "The decimals of the native token."
+  })
+  public static NATIVE_TOKEN_DECIMALS = 8;
+
   constructor(
     vaultAddress: UserAlias,
     sellingToken: TokenInstanceKey,

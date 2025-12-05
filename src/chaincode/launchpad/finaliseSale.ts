@@ -65,7 +65,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     tokenInstanceKey: nativeToken,
     quantity: new BigNumber(sale.nativeTokenQuantity)
       .times(ownerAllocationPercentage)
-      .decimalPlaces(8, BigNumber.ROUND_DOWN),
+      .decimalPlaces(LaunchpadSale.NATIVE_TOKEN_DECIMALS, BigNumber.ROUND_DOWN),
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: vaultAddressAlias,
@@ -79,7 +79,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     tokenInstanceKey: nativeToken,
     quantity: new BigNumber(sale.nativeTokenQuantity)
       .times(platformFeePercentage)
-      .decimalPlaces(8, BigNumber.ROUND_DOWN),
+      .decimalPlaces(LaunchpadSale.NATIVE_TOKEN_DECIMALS, BigNumber.ROUND_DOWN),
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: vaultAddressAlias,

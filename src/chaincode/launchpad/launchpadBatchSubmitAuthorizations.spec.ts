@@ -12,8 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { NotFoundError } from "@gala-chain/api";
-import { GalaChainContext, getObjectByKey, putChainObject } from "@gala-chain/chaincode";
+import { randomUniqueKey } from "@gala-chain/api";
+import { fixture, transactionSuccess, users } from "@gala-chain/test";
+import { plainToInstance } from "class-transformer";
 
 import {
   AuthorizeBatchSubmitterDto,
@@ -22,6 +23,7 @@ import {
   FetchBatchSubmitAuthoritiesDto,
   LaunchpadBatchSubmitAuthorities
 } from "../../api/types";
+import { LaunchpadContract } from "../LaunchpadContract";
 import {
   authorizeLaunchpadBatchSubmitter,
   deauthorizeLaunchpadBatchSubmitter,
@@ -29,37 +31,8 @@ import {
   getLaunchpadBatchSubmitAuthorities
 } from "./launchpadBatchSubmitAuthorizations";
 
-jest.mock("@gala-chain/chaincode", () => ({
-  ...jest.requireActual("@gala-chain/chaincode"),
-  getObjectByKey: jest.fn(),
-  putChainObject: jest.fn()
-}));
-
-// Mock context for testing
-const createMockContext = (callingUser: string): GalaChainContext => {
-  const mockStub = {
-    createCompositeKey: (indexKey: string, attributes: string[]) => {
-      return `${indexKey}${attributes.join("|")}`;
-    },
-    getState: jest.fn(),
-    putState: jest.fn()
-  };
-
-  return {
-    callingUser,
-    stub: mockStub as any,
-    clientIdentity: {
-      getMSPID: () => "CuratorOrg"
-    } as any
-  } as GalaChainContext;
-};
-
 describe("BatchSubmitAuthorizations", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe("BatchSubmitAuthorizations chain object", () => {
+  describe("BatchSubmitAuthorities chain object", () => {
     it("should create with initial authorities", () => {
       const auth = new LaunchpadBatchSubmitAuthorities(["user1", "user2"]);
       expect(auth.authorities).toEqual(["user1", "user2"]);
@@ -99,87 +72,196 @@ describe("BatchSubmitAuthorizations", () => {
     });
   });
 
-  describe("fetchBatchSubmitAuthorizations", () => {
+  describe("fetchLaunchpadBatchSubmitAuthorities", () => {
     it("should return existing authorizations", async () => {
-      const ctx = createMockContext("user1");
-      const existingAuth = new LaunchpadBatchSubmitAuthorities(["user1", "user2"]);
+      // Given
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([
+        users.testUser1.identityKey,
+        users.testUser2.identityKey
+      ]);
 
-      (getObjectByKey as jest.Mock).mockResolvedValue(existingAuth);
-      (putChainObject as jest.Mock).mockResolvedValue(undefined);
+      const { ctx } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(existingAuth);
 
+      // When
       const result = await fetchLaunchpadBatchSubmitAuthorities(ctx);
 
-      expect(result).toBe(existingAuth);
+      // Then
+      expect(result).toBeInstanceOf(LaunchpadBatchSubmitAuthorities);
+      expect(result.authorities).toContain(users.testUser1.identityKey);
+      expect(result.authorities).toContain(users.testUser2.identityKey);
     });
   });
 
-  describe("authorizeBatchSubmitter", () => {
+  describe("authorizeLaunchpadBatchSubmitter", () => {
     it("should authorize new users when caller is authorized", async () => {
-      const ctx = createMockContext("user1");
-      const existingAuth = new LaunchpadBatchSubmitAuthorities(["user1"]);
-      (putChainObject as jest.Mock).mockResolvedValue(existingAuth);
-      (putChainObject as jest.Mock).mockResolvedValue(undefined);
+      // Given
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([users.testUser1.identityKey]);
+
+      const { ctx } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(existingAuth);
 
       const dto = new AuthorizeBatchSubmitterDto();
-      dto.authorities = ["user2", "user3"];
+      dto.authorities = [users.testUser2.identityKey];
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.testUser1.privateKey);
 
+      // When
       const result = await authorizeLaunchpadBatchSubmitter(ctx, dto);
 
+      // Then
       expect(result).toBeInstanceOf(BatchSubmitAuthoritiesResDto);
-      expect(result.authorities).toContain("user1");
-      expect(result.authorities).toContain("user2");
-      expect(result.authorities).toContain("user3");
+      expect(result.authorities).toContain(users.testUser1.identityKey);
+      expect(result.authorities).toContain(users.testUser2.identityKey);
     });
 
     it("should create new authorities object when none exists", async () => {
-      const ctx = createMockContext("user1");
-
-      (getObjectByKey as jest.Mock).mockRejectedValue(new NotFoundError("Not found"));
-      (putChainObject as jest.Mock).mockResolvedValue(undefined);
+      // Given
+      const { ctx } = fixture(LaunchpadContract).registeredUsers(users.testUser1);
 
       const dto = new AuthorizeBatchSubmitterDto();
-      dto.authorities = ["user1", "user2"];
+      dto.authorities = [users.testUser1.identityKey, users.testUser2.identityKey];
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.testUser1.privateKey);
 
+      // When
       const result = await authorizeLaunchpadBatchSubmitter(ctx, dto);
 
+      // Then
       expect(result).toBeInstanceOf(BatchSubmitAuthoritiesResDto);
-      expect(result.authorities).toContain("user1");
-      expect(result.authorities).toContain("user2");
-      expect(putChainObject).toHaveBeenCalled();
+      expect(result.authorities).toContain(users.testUser1.identityKey);
+      expect(result.authorities).toContain(users.testUser2.identityKey);
     });
   });
 
-  describe("deauthorizeBatchSubmitter", () => {
+  describe("deauthorizeLaunchpadBatchSubmitter", () => {
     it("should deauthorize user when caller is authorized", async () => {
-      const ctx = createMockContext("user1");
-      const existingAuth = new LaunchpadBatchSubmitAuthorities(["user1", "user2"]);
+      // Given
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([
+        users.testUser1.identityKey,
+        users.testUser2.identityKey
+      ]);
 
-      (getObjectByKey as jest.Mock).mockResolvedValue(existingAuth);
-      (putChainObject as jest.Mock).mockResolvedValue(undefined);
+      const { ctx } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(existingAuth);
 
       const dto = new DeauthorizeBatchSubmitterDto();
-      dto.authority = "user2";
+      dto.authority = users.testUser2.identityKey;
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.testUser1.privateKey);
 
+      // When
       const result = await deauthorizeLaunchpadBatchSubmitter(ctx, dto);
 
+      // Then
       expect(result).toBeInstanceOf(BatchSubmitAuthoritiesResDto);
-      expect(result.authorities).toContain("user1");
-      expect(result.authorities).not.toContain("user2");
+      expect(result.authorities).toContain(users.testUser1.identityKey);
+      expect(result.authorities).not.toContain(users.testUser2.identityKey);
     });
   });
 
-  describe("getBatchSubmitAuthorizations", () => {
+  describe("getLaunchpadBatchSubmitAuthorities", () => {
     it("should return current authorizations", async () => {
-      const ctx = createMockContext("user1");
-      const existingAuth = new LaunchpadBatchSubmitAuthorities(["user1", "user2"]);
+      // Given
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([
+        users.testUser1.identityKey,
+        users.testUser2.identityKey
+      ]);
 
-      (getObjectByKey as jest.Mock).mockResolvedValue(existingAuth);
+      const { ctx } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(existingAuth);
 
       const dto = new FetchBatchSubmitAuthoritiesDto();
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.testUser1.privateKey);
+
+      // When
       const result = await getLaunchpadBatchSubmitAuthorities(ctx, dto);
 
+      // Then
       expect(result).toBeInstanceOf(BatchSubmitAuthoritiesResDto);
-      expect(result.authorities).toEqual(["user1", "user2"]);
+      expect(result.authorities).toEqual([users.testUser1.identityKey, users.testUser2.identityKey]);
+    });
+  });
+
+  describe("AuthorizeBatchSubmitter contract method", () => {
+    it("should authorize new users through contract", async () => {
+      // Given
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([users.admin.identityKey]);
+
+      const { ctx, contract } = fixture(LaunchpadContract)
+        .caClientIdentity("test-admin", "CuratorOrg")
+        .registeredUsers(users.admin)
+        .savedState(existingAuth);
+
+      const dto = new AuthorizeBatchSubmitterDto();
+      dto.authorities = [users.testUser2.identityKey];
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.admin.privateKey);
+
+      const expectedResponse = plainToInstance(BatchSubmitAuthoritiesResDto, {
+        authorities: [users.admin.identityKey, users.testUser2.identityKey]
+      });
+
+      // When
+      const result = await contract.AuthorizeBatchSubmitter(ctx, dto);
+
+      // Then
+      expect(result).toEqual(transactionSuccess(expectedResponse));
+    });
+  });
+
+  describe("DeauthorizeBatchSubmitter contract method", () => {
+    it("should deauthorize user through contract", async () => {
+      // Given
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([
+        users.admin.identityKey,
+        users.testUser2.identityKey
+      ]);
+
+      const { ctx, contract } = fixture(LaunchpadContract)
+        .caClientIdentity("test-admin", "CuratorOrg")
+        .registeredUsers(users.admin)
+        .savedState(existingAuth);
+
+      const dto = new DeauthorizeBatchSubmitterDto();
+      dto.authority = users.testUser2.identityKey;
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.admin.privateKey);
+
+      const expectedResponse = plainToInstance(BatchSubmitAuthoritiesResDto, {
+        authorities: [users.admin.identityKey]
+      });
+
+      // When
+      const result = await contract.DeauthorizeBatchSubmitter(ctx, dto);
+
+      // Then
+      expect(result).toEqual(transactionSuccess(expectedResponse));
+    });
+  });
+
+  describe("GetBatchSubmitAuthorities contract method", () => {
+    it("should return current authorizations through contract", async () => {
+      // Given
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([
+        users.testUser1.identityKey,
+        users.testUser2.identityKey
+      ]);
+
+      const { ctx, contract } = fixture(LaunchpadContract)
+        .registeredUsers(users.testUser1)
+        .savedState(existingAuth);
+
+      const dto = new FetchBatchSubmitAuthoritiesDto();
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.testUser1.privateKey);
+
+      const expectedResponse = plainToInstance(BatchSubmitAuthoritiesResDto, {
+        authorities: [users.testUser1.identityKey, users.testUser2.identityKey]
+      });
+
+      // When
+      const result = await contract.GetBatchSubmitAuthorities(ctx, dto);
+
+      // Then
+      expect(result).toEqual(transactionSuccess(expectedResponse));
     });
   });
 });

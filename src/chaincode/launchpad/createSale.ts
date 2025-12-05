@@ -85,7 +85,7 @@ export async function createSale(
     network: "GC",
     tokenClass: tokenInstanceKey.getTokenClassKey(),
     isNonFungible: false,
-    decimals: 18,
+    decimals: LaunchpadSale.SELLING_TOKEN_DECIMALS,
     name: launchpadDetails.tokenName,
     symbol: launchpadDetails.tokenSymbol,
     description: launchpadDetails.tokenDescription,

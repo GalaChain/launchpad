@@ -12,14 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { TokenClass } from "@gala-chain/api";
-import {
-  GalaChainContext,
-  fetchTokenClass,
-  getObjectByKey,
-  putChainObject,
-  transferToken
-} from "@gala-chain/chaincode";
+import { GalaChainContext, fetchTokenClass, putChainObject, transferToken } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
@@ -60,23 +53,10 @@ export async function buyWithNative(
   const callMemeTokenOutResult = await callMemeTokenOut(ctx, buyTokenDTO);
   const transactionFees = new BigNumber(callMemeTokenOutResult.extraFees.transactionFees); // transaction fees
   const nativeTokensRequired = new BigNumber(callMemeTokenOutResult.originalQuantity); // number of native tokens user wants to spend
-  let tokensToBuy = new BigNumber(callMemeTokenOutResult.calculatedQuantity); // number of tokens user will be buying
+  const tokensToBuy = new BigNumber(callMemeTokenOutResult.calculatedQuantity); // number of tokens user will be buying
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
-
-  // Round tokensToBuy based on decimals property of sellToken TokenClass entry,
-  // because otherwise `transferToken()` call below will fail with
-  // an INVALID_DECIMALS error.
-  const { collection, category, type, additionalKey } = sale.sellingToken;
-
-  const memeTokenClass = await getObjectByKey(
-    ctx,
-    TokenClass,
-    TokenClass.getCompositeKeyFromParts(TokenClass.INDEX_KEY, [collection, category, type, additionalKey])
-  );
-
-  tokensToBuy = tokensToBuy.decimalPlaces(memeTokenClass.decimals);
 
   // If native tokens required exceeds the market cap, the sale can be finalized
   if (

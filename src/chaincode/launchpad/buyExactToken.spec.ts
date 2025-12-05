@@ -23,8 +23,7 @@ import {
   asValidUserAlias,
   randomUniqueKey
 } from "@gala-chain/api";
-import { InvalidDecimalError } from "@gala-chain/chaincode";
-import { currency, fixture, transactionError, transactionSuccess, users } from "@gala-chain/test";
+import { currency, fixture, transactionSuccess, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
@@ -126,40 +125,6 @@ describe("buyWithNative", () => {
 
     // Then
     expect(buyTokenRes).toEqual(transactionSuccess());
-  });
-
-  it("should reject buy when meme token has 0 decimals and input dto contains fractional quantity", async () => {
-    // Given - Setup token with 0 decimals to force decimal precision error
-    const zeroDecimalCurrencyClass = plainToInstance(TokenClass, {
-      ...currency.tokenClassPlain(),
-      decimals: 0 // Integer-only token
-    });
-
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(
-        zeroDecimalCurrencyClass,
-        currencyInstance,
-        launchpadGalaClass,
-        launchpadGalaInstance,
-        sale,
-        salelaunchpadGalaBalance,
-        saleCurrencyBalance,
-        userlaunchpadGalaBalance,
-        userCurrencyBalance
-      );
-
-    const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("500.555"));
-    dto.uniqueKey = randomUniqueKey();
-    dto.sign(users.testUser1.privateKey);
-
-    // When
-    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
-
-    // Then
-    expect(buyTokenRes).toEqual(
-      transactionError(new InvalidDecimalError(dto.tokenQuantity, zeroDecimalCurrencyClass.decimals))
-    );
   });
 
   test("User should be able to buy exact tokens, without fee configured", async () => {

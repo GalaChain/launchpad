@@ -28,7 +28,7 @@ import { SlippageToleranceExceededError } from "../../api/utils/error";
 import { fetchLaunchpadFeeAddress } from "../utils";
 
 const REVERSE_BONDING_CURVE_FEE_CODE = "LaunchpadReverseBondingCurveFee";
-const NATIVE_TOKEN_DECIMALS = 8;
+const NATIVE_TOKEN_DECIMALS = LaunchpadSale.NATIVE_TOKEN_DECIMALS;
 
 export function calculateReverseBondingCurveFee(sale: LaunchpadSale, nativeTokensToReceive: BigNumber) {
   if (
@@ -105,7 +105,7 @@ export async function payReverseBondingCurveFee(
 }
 
 export function calculateTransactionFee(tokensBeingTraded: BigNumber, feeAmount?: number) {
-  return tokensBeingTraded.multipliedBy(feeAmount ?? 0).toFixed(8, BigNumber.ROUND_UP);
+  return tokensBeingTraded.multipliedBy(feeAmount ?? 0).toFixed(NATIVE_TOKEN_DECIMALS, BigNumber.ROUND_UP);
 }
 
 /**

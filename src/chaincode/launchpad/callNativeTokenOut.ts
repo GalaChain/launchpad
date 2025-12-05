@@ -17,10 +17,20 @@ import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { ExactTokenQuantityDto, LaunchpadSale, TradeCalculationResDto } from "../../api/types";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import {
+  fetchAndValidateSale,
+  fetchLaunchpadFeeAddress,
+  fetchTokenDecimals,
+  getBondingConstants
+} from "../utils";
 import { calculateReverseBondingCurveFee, calculateTransactionFee } from "./fees";
 
-function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigNumber): [string, string] {
+function calculateNativeTokensReceived(
+  sale: LaunchpadSale,
+  tokensToSellBn: BigNumber,
+  sellingTokenDecimals: number,
+  nativeTokenDecimals: number
+): [string, string] {
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
   let tokensToSell = new Decimal(tokensToSellBn.toString());
@@ -34,7 +44,10 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
     newTotalTokensSold = new Decimal(0);
   }
 
-  const exponent1 = exponentFactor.mul(newTotalTokensSold.add(tokensToSell)).div(decimals);
+  // Round tokens first, then calculate native tokens based on that rounded amount
+  const roundedTokensToSell = tokensToSell.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_UP);
+
+  const exponent1 = exponentFactor.mul(newTotalTokensSold.add(roundedTokensToSell)).div(decimals);
   const exponent2 = exponentFactor.mul(newTotalTokensSold).div(decimals);
 
   const eResult1 = euler.pow(exponent1);
@@ -43,9 +56,9 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
   const constantFactor = basePrice.div(exponentFactor);
   const differenceOfExponentials = eResult1.minus(eResult2);
   const price = constantFactor.mul(differenceOfExponentials);
-  const roundedPrice = price.toDecimalPlaces(8, Decimal.ROUND_DOWN);
+  const roundedPrice = price.toDecimalPlaces(nativeTokenDecimals, Decimal.ROUND_DOWN);
 
-  return [tokensToSell.toFixed(), roundedPrice.toFixed()];
+  return [roundedTokensToSell.toFixed(), roundedPrice.toFixed()];
 }
 
 /**
@@ -70,9 +83,12 @@ export async function callNativeTokenOut(
   sellTokenDTO: ExactTokenQuantityDto
 ): Promise<TradeCalculationResDto> {
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
+  const { nativeTokenDecimals, sellingTokenDecimals } = await fetchTokenDecimals(ctx, sale);
   const [originalQuantity, calculatedQuantity] = calculateNativeTokensReceived(
     sale,
-    sellTokenDTO.tokenQuantity
+    sellTokenDTO.tokenQuantity,
+    sellingTokenDecimals,
+    nativeTokenDecimals
   );
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
 

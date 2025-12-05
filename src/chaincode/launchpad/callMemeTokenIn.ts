@@ -18,15 +18,25 @@ import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
 import { LaunchpadSale, NativeTokenQuantityDto, TradeCalculationResDto } from "../../api/types";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import {
+  fetchAndValidateSale,
+  fetchLaunchpadFeeAddress,
+  fetchTokenDecimals,
+  getBondingConstants
+} from "../utils";
 import { calculateReverseBondingCurveFee, calculateTransactionFee } from "./fees";
 
 function calculateMemeTokensRequired(
   sale: LaunchpadSale,
-  requestedNativeTokenQuantity: BigNumber
+  requestedNativeTokenQuantity: BigNumber,
+  nativeTokenDecimals: number,
+  sellingTokenDecimals: number
 ): [string, string] {
   const totalTokensSold = new Decimal(sale.fetchTokensSold()); // current tokens sold / x
-  let nativeTokens = new Decimal(requestedNativeTokenQuantity.toString()); // native tokens used to buy / y
+  let nativeTokens = new Decimal(requestedNativeTokenQuantity.toString()).toDecimalPlaces(
+    nativeTokenDecimals,
+    Decimal.ROUND_DOWN
+  );
   const basePrice = new Decimal(LaunchpadSale.BASE_PRICE); // base price / a
   const { exponentFactor, euler, decimals } = getBondingConstants();
 
@@ -46,7 +56,7 @@ function calculateMemeTokensRequired(
   const adjustedExp = exp1.minus(constantFactor);
   const lnAdjustedExp = adjustedExp.ln();
   const tokensSent = totalTokensSold.minus(lnAdjustedExp.mul(decimals).div(exponentFactor));
-  const roundedTokenSent = tokensSent.toDecimalPlaces(18, Decimal.ROUND_UP);
+  const roundedTokenSent = tokensSent.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_UP);
 
   return [nativeTokens.toFixed(), roundedTokenSent.toFixed()];
 }
@@ -75,9 +85,12 @@ export async function callMemeTokenIn(
 ): Promise<TradeCalculationResDto> {
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
+  const { nativeTokenDecimals, sellingTokenDecimals } = await fetchTokenDecimals(ctx, sale);
   const [originalQuantity, calculatedQuantity] = calculateMemeTokensRequired(
     sale,
-    sellTokenDTO.nativeTokenQuantity
+    sellTokenDTO.nativeTokenQuantity,
+    nativeTokenDecimals,
+    sellingTokenDecimals
   );
 
   return {
