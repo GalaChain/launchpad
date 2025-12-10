@@ -26,6 +26,8 @@ import { users } from "@gala-chain/test";
 import { createInstanceFn, createPlainFn } from "@gala-chain/test/lib/src/data/utils";
 import BigNumber from "bignumber.js";
 
+import { LaunchpadSale } from "../../api/types";
+
 process.env.LAUNCHPAD_GALA_CLASS_COLLECTION = process.env.LAUNCHPAD_GALA_CLASS_COLLECTION ?? "GALA";
 process.env.LAUNCHPAD_GALA_CLASS_CATEGORY = process.env.LAUNCHPAD_GALA_CLASS_CATEGORY ?? "Unit";
 process.env.LAUNCHPAD_GALA_CLASS_TYPE = process.env.LAUNCHPAD_GALA_CLASS_TYPE ?? "none";
@@ -41,7 +43,7 @@ const tokenClassKeyPlain = createPlainFn({
 const tokenClassPlain = createPlainFn({
   ...tokenClassKeyPlain(),
   description: "Generated via automated test suite.",
-  decimals: 8, // This codebase currently hard-codes 8 as NATIVE_TOKEN_DECIMALS
+  decimals: LaunchpadSale.NATIVE_TOKEN_DECIMALS,
   image: "https://app.gala.games/test-image-placeholder-url.png",
   isNonFungible: false,
   maxCapacity: new BigNumber(100000000000000),

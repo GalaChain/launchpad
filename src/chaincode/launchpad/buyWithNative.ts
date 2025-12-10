@@ -12,22 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { TokenClass, ValidationFailedError } from "@gala-chain/api";
-import {
-  GalaChainContext,
-  fetchOrCreateBalance,
-  fetchTokenClass,
-  getObjectByKey,
-  putChainObject,
-  transferToken
-} from "@gala-chain/chaincode";
+import { GalaChainContext, fetchTokenClass, putChainObject, transferToken } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { ExactTokenQuantityDto, LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
+import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
+import { fetchAndValidateSale } from "../utils";
 import { callMemeTokenOut } from "./callMemeTokenOut";
-import { callNativeTokenIn } from "./callNativeTokenIn";
+import { transferTransactionFees } from "./fees";
 import { finalizeSale } from "./finaliseSale";
 
 /**
@@ -56,83 +48,41 @@ export async function buyWithNative(
 
   // Fetch and validate sale state
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
-  const tokensLeftInVault = new BigNumber(sale.sellingTokenQuantity);
 
   // Calculate how many tokens the user can buy and fee info
   const callMemeTokenOutResult = await callMemeTokenOut(ctx, buyTokenDTO);
-  let transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
-  let tokensToBuy = new BigNumber(callMemeTokenOutResult.calculatedQuantity);
+  const transactionFees = new BigNumber(callMemeTokenOutResult.extraFees.transactionFees); // transaction fees
+  const nativeTokensRequired = new BigNumber(callMemeTokenOutResult.originalQuantity); // number of native tokens user wants to spend
+  const tokensToBuy = new BigNumber(callMemeTokenOutResult.calculatedQuantity); // number of tokens user will be buying
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
-  // Round tokensToBuy based on decimals property of sellToken TokenClass entry,
-  // because otherwise `transferToken()` call below will fail with
-  // an INVALID_DECIMALS error.
-  const { collection, category, type, additionalKey } = sale.sellingToken;
-
-  const memeTokenClass = await getObjectByKey(
-    ctx,
-    TokenClass,
-    TokenClass.getCompositeKeyFromParts(TokenClass.INDEX_KEY, [collection, category, type, additionalKey])
-  );
-
-  tokensToBuy = tokensToBuy.decimalPlaces(memeTokenClass.decimals);
-
-  // If vault has fewer tokens than what user wants to buy, cap the purchase
-  if (tokensLeftInVault.comparedTo(tokensToBuy) <= 0) {
-    tokensToBuy = tokensLeftInVault.decimalPlaces(memeTokenClass.decimals);
-    const nativeTokensRequiredToBuyDto = new ExactTokenQuantityDto(buyTokenDTO.vaultAddress, tokensToBuy);
-    const callNativeTokenInResult = await callNativeTokenIn(ctx, nativeTokensRequiredToBuyDto);
-    transactionFees = callMemeTokenOutResult.extraFees.transactionFees;
-    buyTokenDTO.nativeTokenQuantity = new BigNumber(callNativeTokenInResult.calculatedQuantity);
-    isSaleFinalized = true;
-  }
-
-  // Finalize sale if market cap is reached
+  // If native tokens required exceeds the market cap, the sale can be finalized
   if (
     buyTokenDTO.nativeTokenQuantity
       .plus(new BigNumber(sale.nativeTokenQuantity))
-      .gte(new BigNumber(LaunchpadSale.MARKET_CAP))
+      .isGreaterThanOrEqualTo(new BigNumber(LaunchpadSale.MARKET_CAP))
   ) {
     isSaleFinalized = true;
   }
 
   // Check for slippage condition
-  if (buyTokenDTO.expectedToken && buyTokenDTO.expectedToken.comparedTo(tokensToBuy) > 0) {
+  if (buyTokenDTO.expectedToken && buyTokenDTO.expectedToken.isGreaterThan(tokensToBuy)) {
     throw new SlippageToleranceExceededError(
       `expected ${buyTokenDTO.expectedToken.toString()}, but only ${tokensToBuy.toString()} tokens can be provided. Reduce the expected amount or adjust your slippage tolerance.`
     );
   }
 
   // Transfer transaction fees to launchpad fee address
-  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && transactionFees) {
-    const totalRequired = new BigNumber(buyTokenDTO.nativeTokenQuantity).plus(transactionFees);
-
-    const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);
-    if (buyerBalance.getQuantityTotal().lt(totalRequired)) {
-      throw new ValidationFailedError(
-        `Insufficient balance: Total amount required including fee is ${totalRequired}`
-      );
-    }
-
-    await transferToken(ctx, {
-      from: ctx.callingUser,
-      to: launchpadFeeAddressConfiguration.feeAddress,
-      tokenInstanceKey: nativeToken,
-      quantity: new BigNumber(transactionFees),
-      allowancesToUse: [],
-      authorizedOnBehalf: undefined
-    });
-  }
+  await transferTransactionFees(ctx, sale, transactionFees, nativeToken, nativeTokensRequired);
 
   // Transfer native tokens from buyer to vault
   await transferToken(ctx, {
     from: ctx.callingUser,
     to: buyTokenDTO.vaultAddress,
     tokenInstanceKey: nativeToken,
-    quantity: buyTokenDTO.nativeTokenQuantity,
+    quantity: nativeTokensRequired,
     allowancesToUse: [],
     authorizedOnBehalf: undefined
   });
@@ -151,7 +101,7 @@ export async function buyWithNative(
   });
 
   // Update sale object with purchase data
-  sale.buyToken(tokensToBuy, buyTokenDTO.nativeTokenQuantity);
+  sale.buyToken(tokensToBuy, nativeTokensRequired);
   await putChainObject(ctx, sale);
 
   // Finalize sale if it's complete
@@ -161,8 +111,8 @@ export async function buyWithNative(
 
   const token = await fetchTokenClass(ctx, sale.sellingToken);
   return {
-    inputQuantity: buyTokenDTO.nativeTokenQuantity.toFixed(),
-    totalFees: transactionFees,
+    inputQuantity: nativeTokensRequired.toFixed(),
+    totalFees: transactionFees.toFixed(),
     outputQuantity: tokensToBuy.toFixed(),
     tokenName: token.name,
     tradeType: "Buy",

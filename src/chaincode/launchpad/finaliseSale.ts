@@ -65,7 +65,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     tokenInstanceKey: nativeToken,
     quantity: new BigNumber(sale.nativeTokenQuantity)
       .times(ownerAllocationPercentage)
-      .decimalPlaces(8, BigNumber.ROUND_DOWN),
+      .decimalPlaces(LaunchpadSale.NATIVE_TOKEN_DECIMALS, BigNumber.ROUND_DOWN),
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: vaultAddressAlias,
@@ -79,7 +79,7 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     tokenInstanceKey: nativeToken,
     quantity: new BigNumber(sale.nativeTokenQuantity)
       .times(platformFeePercentage)
-      .decimalPlaces(8, BigNumber.ROUND_DOWN),
+      .decimalPlaces(LaunchpadSale.NATIVE_TOKEN_DECIMALS, BigNumber.ROUND_DOWN),
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: vaultAddressAlias,
@@ -110,7 +110,10 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const poolInfo = await getSlot0(ctx, poolDTO);
 
   // Proceed normally if price in the pool is within an acceptable range
-  const priceCloseEnough = sqrtPrice.minus(poolInfo.sqrtPrice).abs().lte(sqrtPrice.multipliedBy(0.05));
+  const priceCloseEnough = sqrtPrice
+    .minus(poolInfo.sqrtPrice)
+    .abs()
+    .isLessThanOrEqualTo(sqrtPrice.multipliedBy(0.05));
   const expectedNativeTokenRequired = new BigNumber(sale.nativeTokenQuantity).times(
     liquidityAllocationPercentage
   );
@@ -200,7 +203,7 @@ function calculateFinalLaunchpadPrice(
   areTokensSorted: boolean
 ): { sqrtPrice: BigNumber; finalPrice: BigNumber } {
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
-  const basePrice = new Decimal(sale.fetchBasePrice());
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
   const { exponentFactor, euler, decimals } = getBondingConstants();
 
   const exponent = exponentFactor.mul(totalTokensSold).div(decimals);

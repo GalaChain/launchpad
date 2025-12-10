@@ -16,9 +16,50 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { ExactTokenQuantityDto } from "../../api/types";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import { ExactTokenQuantityDto, LaunchpadSale, TradeCalculationResDto } from "../../api/types";
+import {
+  fetchAndValidateSale,
+  fetchLaunchpadFeeAddress,
+  fetchTokenDecimals,
+  getBondingConstants
+} from "../utils";
 import { calculateTransactionFee } from "./fees";
+
+function calculateNativeTokensRequired(
+  tokensToBuy: Decimal,
+  totalTokensSold: Decimal,
+  sellingTokenDecimals: number,
+  nativeTokenDecimals: number
+): [string, string] {
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
+  const { exponentFactor, euler, decimals } = getBondingConstants();
+
+  // Round tokens first, then calculate native tokens based on that rounded amount
+  const roundedTokensToBuy = tokensToBuy.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_DOWN);
+
+  // Calculate native tokens required: price = (basePrice / exponentFactor) * (e^(exponentFactor * (totalTokensSold + tokensToBuy) / decimals) - e^(exponentFactor * totalTokensSold / decimals))
+  // Where:
+  //   exponent1 = exponentFactor * (totalTokensSold + tokensToBuy) / decimals
+  //   exponent2 = exponentFactor * totalTokensSold / decimals
+  //   eResult1 = e^(exponent1) = e^(exponentFactor * (totalTokensSold + tokensToBuy) / decimals)
+  //   eResult2 = e^(exponent2) = e^(exponentFactor * totalTokensSold / decimals)
+  //   constantFactor = basePrice / exponentFactor
+  //   differenceOfExponentials = eResult1 - eResult2
+  //   price = constantFactor * differenceOfExponentials
+  const exponent1 = exponentFactor.mul(totalTokensSold.add(roundedTokensToBuy)).div(decimals);
+  const exponent2 = exponentFactor.mul(totalTokensSold).div(decimals);
+
+  const eResult1 = euler.pow(exponent1);
+  const eResult2 = euler.pow(exponent2);
+
+  const constantFactor = basePrice.div(exponentFactor);
+  const differenceOfExponentials = eResult1.minus(eResult2);
+
+  const price = constantFactor.mul(differenceOfExponentials);
+  const roundedPrice = price.toDecimalPlaces(nativeTokenDecimals, Decimal.ROUND_UP);
+
+  return [roundedTokensToBuy.toFixed(), roundedPrice.toFixed()];
+}
 
 /**
  * Calculates the amount of native tokens required to purchase a specified amount
@@ -31,43 +72,45 @@ import { calculateTransactionFee } from "./fees";
  * @param buyTokenDTO - The data transfer object containing the sale address
  *                      and the exact amount of tokens to be purchased.
  *
- * @returns A promise that resolves to a string representing the calculated amount of
- *          native tokens required for the purchase, rounded up to 8 decimal places.
+ * @returns A promise that resolves to a TradeCalculationResDto object containing the calculated
+ * quantity of native tokens required for the purchase, the original quantity of tokens used, and extra fees.
  *
  * @throws Error if the calculation encounters an invalid state or data.
  */
-export async function callNativeTokenIn(ctx: GalaChainContext, buyTokenDTO: ExactTokenQuantityDto) {
+export async function callNativeTokenIn(
+  ctx: GalaChainContext,
+  buyTokenDTO: ExactTokenQuantityDto
+): Promise<TradeCalculationResDto> {
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
   let tokensToBuy = new Decimal(buyTokenDTO.tokenQuantity.toString());
-  const basePrice = new Decimal(sale.fetchBasePrice());
-  const { exponentFactor, euler, decimals } = getBondingConstants();
 
+  // Adjust tokensToBuy if user is trying to buy more tokens than the total supply
   if (tokensToBuy.add(totalTokensSold).greaterThan(new Decimal("1e+7"))) {
     tokensToBuy = new Decimal(sale.sellingTokenQuantity);
   }
 
-  const exponent1 = exponentFactor.mul(totalTokensSold.add(tokensToBuy)).div(decimals);
-  const exponent2 = exponentFactor.mul(totalTokensSold).div(decimals);
+  // Get token decimals for rounding
+  const { nativeTokenDecimals, sellingTokenDecimals } = await fetchTokenDecimals(ctx, sale);
 
-  const eResult1 = euler.pow(exponent1);
-  const eResult2 = euler.pow(exponent2);
-
-  const constantFactor = basePrice.div(exponentFactor);
-  const differenceOfExponentials = eResult1.minus(eResult2);
-
-  const price = constantFactor.mul(differenceOfExponentials);
+  // Calculate native tokens required using bonding curve math
+  const [originalQuantity, calculatedQuantity] = calculateNativeTokensRequired(
+    tokensToBuy,
+    totalTokensSold,
+    sellingTokenDecimals,
+    nativeTokenDecimals
+  );
 
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
 
-  const roundedPrice = price.toDecimalPlaces(8, Decimal.ROUND_UP).toFixed();
   return {
-    calculatedQuantity: roundedPrice,
+    originalQuantity: originalQuantity,
+    calculatedQuantity: calculatedQuantity,
     extraFees: {
       reverseBondingCurve: "0",
       transactionFees: calculateTransactionFee(
-        BigNumber(roundedPrice),
+        BigNumber(calculatedQuantity),
         launchpadFeeAddressConfiguration?.feeAmount
       )
     }

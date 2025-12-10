@@ -35,7 +35,7 @@ export async function configureLaunchpadFeeAddress(
   dto: ConfigureLaunchpadFeeAddressDto
 ): Promise<LaunchpadFeeConfig> {
   // Validate input: at least one field must be present
-  if (!dto.newPlatformFeeAddress && !dto.newAuthorities?.length && !dto.newFeeAmount) {
+  if (!dto.newPlatformFeeAddress && !dto.newAuthorities?.length && dto.newFeeAmount === undefined) {
     throw new ValidationFailedError("None of the input fields are present.");
   }
 

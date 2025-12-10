@@ -155,7 +155,6 @@ describe("configureLaunchpadFeeAddress", () => {
 
     // Update with zero fee amount
     const configDto = new ConfigureLaunchpadFeeAddressDto();
-    configDto.newPlatformFeeAddress = asValidUserAlias("client|feeAddress"); // Keep same address
     configDto.newFeeAmount = 0;
     configDto.uniqueKey = randomUniqueKey();
     const signedDto = configDto.signed(users.admin.privateKey);

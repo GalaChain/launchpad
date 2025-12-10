@@ -130,41 +130,6 @@ describe("buyWithNative", () => {
     );
   });
 
-  it("should reject buy when input dto has higher fractional precision than GALA TokenClass", async () => {
-    // Given
-    const zeroDecimalLaunchpadClass = plainToInstance(TokenClass, {
-      ...launchpadgala.tokenClassPlain(),
-      decimals: 0 // Integer-only meme token
-    });
-
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(
-        currencyInstance,
-        currencyClass,
-        zeroDecimalLaunchpadClass,
-        launchpadGalaInstance,
-        sale,
-        salelaunchpadGalaBalance,
-        saleCurrencyBalance,
-        userlaunchpadGalaBalance,
-        userCurrencyBalance
-      );
-
-    // Use a native token amount that will produce fractional meme tokens from bonding curve
-    const dto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.01"));
-    dto.uniqueKey = randomUniqueKey();
-    dto.sign(users.testUser1.privateKey);
-
-    // When
-    const buyTokenRes = await contract.BuyWithNative(ctx, dto);
-
-    // Then - Expect error due to decimal precision mismatch
-    expect(buyTokenRes).toEqual(
-      transactionError(new InvalidDecimalError(dto.nativeTokenQuantity, zeroDecimalLaunchpadClass.decimals))
-    );
-  });
-
   test("User buys tokens by providing native gala, without fee needing to be configured", async () => {
     //Given
     const { ctx, contract } = fixture(LaunchpadContract)
@@ -188,7 +153,7 @@ describe("buyWithNative", () => {
 
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "150",
-      totalFees: "0.00000000",
+      totalFees: "0",
       totalTokenSold: "2101667.8890651635",
       outputQuantity: "2101667.8890651635",
       tokenName: "AUTOMATEDTESTCOIN",
@@ -234,7 +199,7 @@ describe("buyWithNative", () => {
 
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "1000",
-      totalFees: "320.00000000",
+      totalFees: "320",
       totalTokenSold: "3663321.3628130557",
       outputQuantity: "3663321.3628130557",
       tokenName: "AUTOMATEDTESTCOIN",

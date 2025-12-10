@@ -371,6 +371,10 @@ export class TradeCalculationResFeesDto {
 export class TradeCalculationResDto {
   @IsNotEmpty()
   @IsString()
+  public originalQuantity: string;
+
+  @IsNotEmpty()
+  @IsString()
   public calculatedQuantity: string;
 
   @ValidateNested({ each: true })

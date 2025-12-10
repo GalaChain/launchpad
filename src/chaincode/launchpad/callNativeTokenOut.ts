@@ -16,25 +16,38 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { ExactTokenQuantityDto, LaunchpadSale } from "../../api/types";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import { ExactTokenQuantityDto, LaunchpadSale, TradeCalculationResDto } from "../../api/types";
+import {
+  fetchAndValidateSale,
+  fetchLaunchpadFeeAddress,
+  fetchTokenDecimals,
+  getBondingConstants
+} from "../utils";
 import { calculateReverseBondingCurveFee, calculateTransactionFee } from "./fees";
 
-function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigNumber) {
+function calculateNativeTokensReceived(
+  sale: LaunchpadSale,
+  tokensToSellBn: BigNumber,
+  sellingTokenDecimals: number,
+  nativeTokenDecimals: number
+): [string, string] {
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
   let tokensToSell = new Decimal(tokensToSellBn.toString());
-  const basePrice = new Decimal(sale.fetchBasePrice());
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
   const { exponentFactor, euler, decimals } = getBondingConstants();
 
   let newTotalTokensSold = totalTokensSold.minus(tokensToSell);
 
-  if (newTotalTokensSold.comparedTo(0) < 0) {
+  if (newTotalTokensSold.lessThan(0)) {
     tokensToSell = totalTokensSold;
     newTotalTokensSold = new Decimal(0);
   }
 
-  const exponent1 = exponentFactor.mul(newTotalTokensSold.add(tokensToSell)).div(decimals);
+  // Round tokens first, then calculate native tokens based on that rounded amount
+  const roundedTokensToSell = tokensToSell.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_UP);
+
+  const exponent1 = exponentFactor.mul(newTotalTokensSold.add(roundedTokensToSell)).div(decimals);
   const exponent2 = exponentFactor.mul(newTotalTokensSold).div(decimals);
 
   const eResult1 = euler.pow(exponent1);
@@ -43,9 +56,9 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
   const constantFactor = basePrice.div(exponentFactor);
   const differenceOfExponentials = eResult1.minus(eResult2);
   const price = constantFactor.mul(differenceOfExponentials);
-  const roundedPrice = price.toDecimalPlaces(8, Decimal.ROUND_DOWN);
+  const roundedPrice = price.toDecimalPlaces(nativeTokenDecimals, Decimal.ROUND_DOWN);
 
-  return roundedPrice.toFixed();
+  return [roundedTokensToSell.toFixed(), roundedPrice.toFixed()];
 }
 
 /**
@@ -59,23 +72,33 @@ function calculateNativeTokensReceived(sale: LaunchpadSale, tokensToSellBn: BigN
  * @param sellTokenDTO - The data transfer object containing the sale address
  *                       and the exact amount of tokens to be sold.
  *
- * @returns A promise that resolves to a string representing the calculated amount of
- *          native tokens to be received, rounded down to 8 decimal places.
+ * @returns A promise that resolves to a TradeCalculationResDto object containing the calculated
+ * quantity of native tokens received, the quantity of tokens required, and extra fees.
  *
  * @throws DefaultError if the calculated new total tokens sold is less than zero
  *                      or if the input amount is invalid.
  */
-export async function callNativeTokenOut(ctx: GalaChainContext, sellTokenDTO: ExactTokenQuantityDto) {
+export async function callNativeTokenOut(
+  ctx: GalaChainContext,
+  sellTokenDTO: ExactTokenQuantityDto
+): Promise<TradeCalculationResDto> {
   const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
-  const nativeTokensReceived = calculateNativeTokensReceived(sale, sellTokenDTO.tokenQuantity);
+  const { nativeTokenDecimals, sellingTokenDecimals } = await fetchTokenDecimals(ctx, sale);
+  const [originalQuantity, calculatedQuantity] = calculateNativeTokensReceived(
+    sale,
+    sellTokenDTO.tokenQuantity,
+    sellingTokenDecimals,
+    nativeTokenDecimals
+  );
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
 
   return {
-    calculatedQuantity: nativeTokensReceived,
+    originalQuantity: originalQuantity,
+    calculatedQuantity: calculatedQuantity,
     extraFees: {
-      reverseBondingCurve: calculateReverseBondingCurveFee(sale, BigNumber(nativeTokensReceived)).toString(),
+      reverseBondingCurve: calculateReverseBondingCurveFee(sale, BigNumber(calculatedQuantity)).toString(),
       transactionFees: calculateTransactionFee(
-        BigNumber(nativeTokensReceived),
+        BigNumber(calculatedQuantity),
         launchpadFeeAddressConfiguration?.feeAmount
       )
     }

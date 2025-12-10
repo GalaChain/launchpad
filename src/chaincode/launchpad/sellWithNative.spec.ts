@@ -125,46 +125,6 @@ describe("sellWithNative", () => {
     );
   });
 
-  it("should reject sell when dto contains fractional precision greater than native TokenClass.decimals", async () => {
-    // Given - Setup meme token with 0 decimals to force decimal precision error
-    const zeroDecimalLaunchpadGalaClass = plainToInstance(TokenClass, {
-      ...launchpadgala.tokenClassPlain(),
-      decimals: 8 // This codebase currently hard-codes 8 as NATIVE_TOKEN_DECIMALS...
-    });
-
-    // Simulate prior buys to establish sale state with native tokens
-    sale.buyToken(new BigNumber("100"), new BigNumber("100"));
-
-    const { ctx, contract } = fixture(LaunchpadContract)
-      .registeredUsers(users.testUser1)
-      .savedState(
-        currencyClass,
-        currencyInstance,
-        zeroDecimalLaunchpadGalaClass,
-        launchpadGalaInstance,
-        sale,
-        salelaunchpadGalaBalance,
-        saleCurrencyBalance,
-        userlaunchpadGalaBalance,
-        userCurrencyBalance
-      );
-
-    // Request native tokens that will require fractional meme tokens from bonding curve
-    const sellDto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("0.123456789"));
-    sellDto.uniqueKey = randomUniqueKey();
-    sellDto.sign(users.testUser1.privateKey);
-
-    // When
-    const response = await contract.SellWithNative(ctx, sellDto);
-
-    // Then - Expect error due to decimal precision mismatch
-    expect(response).toEqual(
-      transactionError(
-        new InvalidDecimalError(sellDto.nativeTokenQuantity, zeroDecimalLaunchpadGalaClass.decimals)
-      )
-    );
-  });
-
   it("should sell tokens for native currency successfully", async () => {
     // Given
     sale.buyToken(new BigNumber("10000"), new BigNumber("10")); // Users bought tokens, sale now has GALA
@@ -188,12 +148,12 @@ describe("sellWithNative", () => {
 
     const expectedResponse = plainToInstance(TradeResDto, {
       functionName: "SellWithNative",
-      inputQuantity: "6008.9271949682",
+      inputQuantity: "6008.9271949683",
       isFinalized: false,
       outputQuantity: "0.1",
       tokenName: "AUTOMATEDTESTCOIN",
       totalFees: "0",
-      totalTokenSold: "3991.0728050318",
+      totalTokenSold: "3991.0728050317",
       tradeType: "Sell",
       uniqueKey: sellDto.uniqueKey,
       userAddress: "client|testUser1",

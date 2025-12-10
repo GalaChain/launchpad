@@ -22,11 +22,11 @@ import {
 } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
+import { NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
+import { fetchAndValidateSale } from "../utils";
 import { callMemeTokenIn } from "./callMemeTokenIn";
-import { payReverseBondingCurveFee } from "./fees";
+import { payReverseBondingCurveFee, transferTransactionFees } from "./fees";
 
 /**
  * Executes a sale of tokens using native tokens (e.g., GALA) in exchange for the specified token amount.
@@ -52,7 +52,7 @@ export async function sellWithNative(
   sellTokenDTO: NativeTokenQuantityDto
 ): Promise<TradeResDto> {
   // Fetch and validate the sale object
-  const sale: LaunchpadSale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
+  const sale = await fetchAndValidateSale(ctx, sellTokenDTO.vaultAddress);
 
   const { collection, category, type, additionalKey } = sale.sellingToken;
   const sellingTokenCompositeKey = TokenClass.getCompositeKeyFromParts(TokenClass.INDEX_KEY, [
@@ -66,22 +66,23 @@ export async function sellWithNative(
   const nativeTokensLeftInVault = new BigNumber(sale.nativeTokenQuantity);
 
   // Cap nativeTokenQuantity to the vault balance if the requested amount exceeds it
-  if (nativeTokensLeftInVault.comparedTo(sellTokenDTO.nativeTokenQuantity) < 0) {
+  if (nativeTokensLeftInVault.isLessThan(sellTokenDTO.nativeTokenQuantity)) {
     throw new ValidationFailedError("Not enough GALA in sale contract to carry out this operation.");
   }
 
   // Calculate how many tokens need to be sold to get the requested native amount
   const callMemeTokenInResult = await callMemeTokenIn(ctx, sellTokenDTO);
-  const transactionFees = callMemeTokenInResult.extraFees.transactionFees;
+  const transactionFees = callMemeTokenInResult.extraFees.transactionFees; // transaction fees
+  const nativeTokensPayout = new BigNumber(callMemeTokenInResult.originalQuantity); // number of native tokens user wants to receive
   const tokensToSell = new BigNumber(callMemeTokenInResult.calculatedQuantity).decimalPlaces(
     sellingToken.decimals
-  );
+  ); // number of tokens user needs to sell
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
   // Enforce slippage tolerance
-  if (sellTokenDTO.expectedToken && sellTokenDTO.expectedToken.comparedTo(tokensToSell) < 0) {
+  if (sellTokenDTO.expectedToken && sellTokenDTO.expectedToken.isLessThan(tokensToSell)) {
     throw new SlippageToleranceExceededError(
       `expected ${sellTokenDTO.expectedToken.toString()}, but at least ${tokensToSell.toString()} tokens are required. Increase the expected amount or adjust your slippage tolerance.`
     );
@@ -92,22 +93,12 @@ export async function sellWithNative(
   await payReverseBondingCurveFee(
     ctx,
     sale,
-    sellTokenDTO.nativeTokenQuantity,
+    nativeTokensPayout,
     sellTokenDTO.extraFees?.maxAcceptableReverseBondingCurveFee
   );
 
   // Transfer launchpad transaction fees if applicable
-  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && transactionFees) {
-    await transferToken(ctx, {
-      from: ctx.callingUser,
-      to: launchpadFeeAddressConfiguration.feeAddress,
-      tokenInstanceKey: nativeToken,
-      quantity: new BigNumber(transactionFees),
-      allowancesToUse: [],
-      authorizedOnBehalf: undefined
-    });
-  }
+  await transferTransactionFees(ctx, sale, transactionFees, nativeToken);
 
   // Send meme tokens from user to vault
   await transferToken(ctx, {
@@ -124,7 +115,7 @@ export async function sellWithNative(
     from: sellTokenDTO.vaultAddress,
     to: ctx.callingUser,
     tokenInstanceKey: nativeToken,
-    quantity: sellTokenDTO.nativeTokenQuantity,
+    quantity: nativeTokensPayout,
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: sellTokenDTO.vaultAddress,
@@ -133,7 +124,7 @@ export async function sellWithNative(
   });
 
   // Update internal sale tracking
-  sale.sellToken(tokensToSell, sellTokenDTO.nativeTokenQuantity);
+  sale.sellToken(tokensToSell, nativeTokensPayout);
   await putChainObject(ctx, sale);
 
   const token = await fetchTokenClass(ctx, sale.sellingToken);
@@ -142,7 +133,7 @@ export async function sellWithNative(
     totalFees: new BigNumber(transactionFees)
       .plus(sellTokenDTO.extraFees?.maxAcceptableReverseBondingCurveFee ?? 0)
       .toFixed(),
-    outputQuantity: sellTokenDTO.nativeTokenQuantity.toFixed(),
+    outputQuantity: nativeTokensPayout.toFixed(),
     tokenName: token.name,
     tradeType: "Sell",
     vaultAddress: sellTokenDTO.vaultAddress,
