@@ -16,9 +16,52 @@ import { GalaChainContext } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 import Decimal from "decimal.js";
 
-import { LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import { LaunchpadSale, NativeTokenQuantityDto, TradeCalculationResDto } from "../../api/types";
+import {
+  fetchAndValidateSale,
+  fetchLaunchpadFeeAddress,
+  fetchTokenDecimals,
+  getBondingConstants
+} from "../utils";
 import { calculateTransactionFee } from "./fees";
+
+function calculateTokensPurchasable(
+  nativeTokens: Decimal,
+  totalTokensSold: Decimal,
+  nativeTokenDecimals: number,
+  sellingTokenDecimals: number
+): [string, string] {
+  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
+  const { exponentFactor, euler, decimals } = getBondingConstants();
+
+  // Round native tokens, then calculate tokens based on that rounded amount
+  const roundedNativeTokens = nativeTokens.toDecimalPlaces(nativeTokenDecimals, Decimal.ROUND_UP);
+
+  // Calculate tokens purchasable: newTokens = (decimals / exponentFactor) * ln((nativeTokens * exponentFactor / basePrice) + e^(exponentFactor * totalTokensSold / decimals)) - totalTokensSold
+  // Where:
+  //   constant = nativeTokens * exponentFactor / basePrice
+  //   exponent1 = exponentFactor * totalTokensSold / decimals
+  //   eResult1 = e^(exponent1) = e^(exponentFactor * totalTokensSold / decimals)
+  //   ethScaled = constant + eResult1 = (nativeTokens * exponentFactor / basePrice) + e^(exponentFactor * totalTokensSold / decimals)
+  //   lnEthScaled = ln(ethScaled) * decimals
+  //   lnEthScaledBase = lnEthScaled / exponentFactor = (decimals / exponentFactor) * ln(ethScaled)
+  //   result = lnEthScaledBase - totalTokensSold
+  const constant = roundedNativeTokens.mul(exponentFactor).div(basePrice);
+  const exponent1 = exponentFactor.mul(totalTokensSold).div(decimals);
+  const eResult1 = euler.pow(exponent1);
+  const ethScaled = constant.add(eResult1);
+  const lnEthScaled = ethScaled.ln().mul(decimals);
+  const lnEthScaledBase = lnEthScaled.div(exponentFactor);
+  const result = lnEthScaledBase.minus(totalTokensSold);
+  let roundedResult = result.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_DOWN);
+
+  // Cap total supply to 10 million
+  if (roundedResult.add(totalTokensSold).greaterThan(new Decimal("1e+7"))) {
+    roundedResult = new Decimal("1e+7").minus(new Decimal(totalTokensSold));
+  }
+
+  return [roundedNativeTokens.toFixed(), roundedResult.toFixed()];
+}
 
 /**
  * Calculates the number of tokens that can be purchased using a specified amount
@@ -31,12 +74,15 @@ import { calculateTransactionFee } from "./fees";
  * @param buyTokenDTO - The data transfer object containing the sale address
  *                      and the amount of native tokens to spend for the purchase.
  *
- * @returns A promise that resolves to a string representing the calculated amount of
- *          tokens to be received, rounded down to 18 decimal places.
+ * @returns A promise that resolves to a TradeCalculationResDto object containing the calculated
+ * quantity of tokens to be received, the original quantity of native tokens used, and extra fees.
  *
  * @throws Error if the calculation results in an invalid state.
  */
-export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: NativeTokenQuantityDto) {
+export async function callMemeTokenOut(
+  ctx: GalaChainContext,
+  buyTokenDTO: NativeTokenQuantityDto
+): Promise<TradeCalculationResDto> {
   // Convert input amount to Decimal
   let nativeTokens = new Decimal(buyTokenDTO.nativeTokenQuantity.toString());
 
@@ -44,11 +90,13 @@ export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: Nativ
   let totalTokensSold = new Decimal(0);
 
   // Fetch sale details and update parameters if this is not a sale premint calculation
+  let sale: LaunchpadSale | undefined;
   if (!buyTokenDTO.IsPreMint) {
-    const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
+    sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
     totalTokensSold = new Decimal(sale.fetchTokensSold());
 
-    // Enforce market cap limit
+    // Enforce market cap limit, adjust number of native tokens that will be used in the transaction
+    // if total GALA tokens will exceed the market cap
     if (
       nativeTokens
         .add(new Decimal(sale.nativeTokenQuantity))
@@ -58,34 +106,32 @@ export async function callMemeTokenOut(ctx: GalaChainContext, buyTokenDTO: Nativ
     }
   }
 
-  // Load bonding curve constants
-  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
-  const { exponentFactor, euler, decimals } = getBondingConstants();
+  // Get token decimals for rounding
+  const { nativeTokenDecimals, sellingTokenDecimals } = sale
+    ? await fetchTokenDecimals(ctx, sale)
+    : {
+        nativeTokenDecimals: LaunchpadSale.NATIVE_TOKEN_DECIMALS,
+        sellingTokenDecimals: LaunchpadSale.SELLING_TOKEN_DECIMALS
+      };
 
-  // Apply bonding curve math
-  const constant = nativeTokens.mul(exponentFactor).div(basePrice);
-  const exponent1 = exponentFactor.mul(totalTokensSold).div(decimals);
-  const eResult1 = euler.pow(exponent1);
-  const ethScaled = constant.add(eResult1);
-  const lnEthScaled = ethScaled.ln().mul(decimals);
-  const lnEthScaledBase = lnEthScaled.div(exponentFactor);
-  const result = lnEthScaledBase.minus(totalTokensSold);
-  let roundedResult = result.toDecimalPlaces(18, Decimal.ROUND_DOWN);
-
-  // Cap total supply to 10 million
-  if (roundedResult.add(totalTokensSold).greaterThan(new Decimal("1e+7"))) {
-    roundedResult = new Decimal("1e+7").minus(new Decimal(totalTokensSold));
-  }
+  // Calculate tokens purchasable using bonding curve math
+  const [originalQuantity, calculatedQuantity] = calculateTokensPurchasable(
+    nativeTokens,
+    totalTokensSold,
+    nativeTokenDecimals,
+    sellingTokenDecimals
+  );
 
   // Fetch fee configuration and return result
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
 
   return {
-    calculatedQuantity: roundedResult.toFixed(),
+    originalQuantity: originalQuantity,
+    calculatedQuantity: calculatedQuantity,
     extraFees: {
       reverseBondingCurve: "0",
       transactionFees: calculateTransactionFee(
-        BigNumber(nativeTokens.toFixed()),
+        BigNumber(originalQuantity),
         launchpadFeeAddressConfiguration?.feeAmount
       )
     }

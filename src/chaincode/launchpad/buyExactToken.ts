@@ -12,20 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ValidationFailedError } from "@gala-chain/api";
-import {
-  GalaChainContext,
-  fetchOrCreateBalance,
-  fetchTokenClass,
-  putChainObject,
-  transferToken
-} from "@gala-chain/chaincode";
+import { GalaChainContext, fetchTokenClass, putChainObject, transferToken } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { ExactTokenQuantityDto, LaunchpadSale, TradeResDto } from "../../api/types";
+import { ExactTokenQuantityDto, TradeResDto } from "../../api/types";
 import { SlippageToleranceExceededError } from "../../api/utils/error";
-import { fetchAndValidateSale, fetchLaunchpadFeeAddress } from "../utils";
+import { fetchAndValidateSale } from "../utils";
 import { callNativeTokenIn } from "./callNativeTokenIn";
+import { transferTransactionFees } from "./fees";
 import { finalizeSale } from "./finaliseSale";
 
 /**
@@ -52,67 +46,39 @@ export async function buyExactToken(
 
   // Fetch and validate the sale based on the provided vault address
   const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
-  const tokenLeftInVault = new BigNumber(sale.sellingTokenQuantity);
+  const tokensLeftInVault = new BigNumber(sale.sellingTokenQuantity);
 
   // Calculate the required amount of native tokens to buy the specified token amount
-  const callNativeTokenInResult1 = await callNativeTokenIn(ctx, buyTokenDTO);
-  let transactionFees = callNativeTokenInResult1.extraFees.transactionFees;
-  let nativeTokensToBuy = new BigNumber(callNativeTokenInResult1.calculatedQuantity);
+  const callNativeTokenInResult = await callNativeTokenIn(ctx, buyTokenDTO);
+  const tokensToBuy = new BigNumber(callNativeTokenInResult.originalQuantity); // number of tokens user wants to buy
+  const nativeTokensRequired = new BigNumber(callNativeTokenInResult.calculatedQuantity); // number of native tokens required to buy the tokens
+  const transactionFees = new BigNumber(callNativeTokenInResult.extraFees.transactionFees); // transaction fees
+
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
-  // If the requested token amount exceeds what's available, adjust it and recalculate native tokens needed
-  if (tokenLeftInVault.lte(buyTokenDTO.tokenQuantity)) {
-    buyTokenDTO.tokenQuantity = tokenLeftInVault;
-    const callNativeTokenInResult2 = await callNativeTokenIn(ctx, buyTokenDTO);
-    nativeTokensToBuy = new BigNumber(callNativeTokenInResult2.calculatedQuantity);
-    transactionFees = callNativeTokenInResult2.extraFees.transactionFees;
-    isSaleFinalized = true;
-  }
-
-  // Check if the native tokens used exceed the market cap, finalizing the sale if true
-  if (
-    nativeTokensToBuy
-      .plus(new BigNumber(sale.nativeTokenQuantity))
-      .gte(new BigNumber(LaunchpadSale.MARKET_CAP))
-  ) {
+  // If the requested token amount exceeds what's available, finalise the sale
+  // Token amounts have been adjusted in the callNativeTokenIn function if they exceed the total supply
+  if (tokensLeftInVault.isLessThanOrEqualTo(buyTokenDTO.tokenQuantity)) {
     isSaleFinalized = true;
   }
 
   // Ensure the expected native token amount is not less than the actual amount required
-  if (buyTokenDTO.expectedNativeToken && buyTokenDTO.expectedNativeToken.comparedTo(nativeTokensToBuy) < 0) {
+  if (buyTokenDTO.expectedNativeToken && buyTokenDTO.expectedNativeToken.isLessThan(nativeTokensRequired)) {
     throw new SlippageToleranceExceededError(
-      `expected ${buyTokenDTO.expectedNativeToken.toString()}, but at least ${nativeTokensToBuy.toString()} are required to complete this operation. Increase the expected amount or adjust your slippage tolerance.`
+      `expected ${buyTokenDTO.expectedNativeToken.toString()}, but at least ${nativeTokensRequired.toString()} are required to complete this operation. Increase the expected amount or adjust your slippage tolerance.`
     );
   }
 
   // Transfer transaction fees
-  const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
-  if (launchpadFeeAddressConfiguration && transactionFees) {
-    const totalRequired = nativeTokensToBuy.plus(new BigNumber(transactionFees));
-
-    const buyerBalance = await fetchOrCreateBalance(ctx, ctx.callingUser, sale.nativeToken);
-    if (buyerBalance.getQuantityTotal().lt(totalRequired)) {
-      throw new ValidationFailedError(
-        `Insufficient balance: Total amount required including fee is ${totalRequired}`
-      );
-    }
-    await transferToken(ctx, {
-      from: ctx.callingUser,
-      to: launchpadFeeAddressConfiguration.feeAddress,
-      tokenInstanceKey: nativeToken,
-      quantity: new BigNumber(transactionFees),
-      allowancesToUse: [],
-      authorizedOnBehalf: undefined
-    });
-  }
+  await transferTransactionFees(ctx, sale, transactionFees, nativeToken, nativeTokensRequired);
 
   // Transfer native tokens from the buyer to the vault
   await transferToken(ctx, {
     from: ctx.callingUser,
     to: buyTokenDTO.vaultAddress,
     tokenInstanceKey: nativeToken,
-    quantity: nativeTokensToBuy,
+    quantity: nativeTokensRequired,
     allowancesToUse: [],
     authorizedOnBehalf: undefined
   });
@@ -122,7 +88,7 @@ export async function buyExactToken(
     from: buyTokenDTO.vaultAddress,
     to: ctx.callingUser,
     tokenInstanceKey: memeToken,
-    quantity: buyTokenDTO.tokenQuantity,
+    quantity: tokensToBuy,
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: buyTokenDTO.vaultAddress,
@@ -131,7 +97,7 @@ export async function buyExactToken(
   });
 
   // Update the sale record with the purchased token details
-  sale.buyToken(buyTokenDTO.tokenQuantity, nativeTokensToBuy);
+  sale.buyToken(tokensToBuy, nativeTokensRequired);
   await putChainObject(ctx, sale);
 
   // If the sale is finalized, create a V3 pool and add liquidity
@@ -142,9 +108,9 @@ export async function buyExactToken(
   // Return the updated balance response
   const token = await fetchTokenClass(ctx, sale.sellingToken);
   return {
-    inputQuantity: nativeTokensToBuy.toFixed(),
-    totalFees: transactionFees,
-    outputQuantity: buyTokenDTO.tokenQuantity.toFixed(),
+    inputQuantity: nativeTokensRequired.toFixed(),
+    totalFees: transactionFees.toFixed(),
+    outputQuantity: tokensToBuy.toFixed(),
     tokenName: token.name,
     tradeType: "Buy",
     vaultAddress: buyTokenDTO.vaultAddress,

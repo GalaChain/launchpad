@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 import { ChainError, DefaultError, ErrorCode, NotFoundError } from "@gala-chain/api";
-import { GalaChainContext, getObjectByKey } from "@gala-chain/chaincode";
+import { GalaChainContext, fetchTokenClass, getObjectByKey } from "@gala-chain/chaincode";
 import Decimal from "decimal.js";
 
 import { LaunchpadFeeConfig, LaunchpadSale, SaleStatus } from "../../api/types";
@@ -65,4 +65,16 @@ export async function fetchLaunchpadFeeAddress(
   });
 
   return platformFeeAddress;
+}
+
+export async function fetchTokenDecimals(
+  ctx: GalaChainContext,
+  sale: LaunchpadSale
+): Promise<{ sellingTokenDecimals: number; nativeTokenDecimals: number }> {
+  const sellingToken = await fetchTokenClass(ctx, sale.fetchSellingTokenInstanceKey());
+  const nativeToken = await fetchTokenClass(ctx, sale.fetchNativeTokenInstanceKey());
+  return {
+    sellingTokenDecimals: sellingToken.decimals,
+    nativeTokenDecimals: nativeToken.decimals
+  };
 }

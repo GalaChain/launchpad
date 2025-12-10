@@ -49,12 +49,14 @@ export class LaunchpadSale extends ChainObject {
   @IsNotEmpty()
   public saleStatus: SaleStatus;
 
-  @Type(() => TokenInstanceKey)
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => TokenInstanceKey)
   public sellingToken: TokenInstanceKey;
 
-  @Type(() => TokenInstanceKey)
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => TokenInstanceKey)
   public nativeToken: TokenInstanceKey;
 
   @IsString()
@@ -98,6 +100,16 @@ export class LaunchpadSale extends ChainObject {
       "native tokens will correspond to 10 million native tokens."
   })
   public static BASE_PRICE = "16506671506650";
+
+  @JSONSchema({
+    description: "The decimals of the selling token."
+  })
+  public static SELLING_TOKEN_DECIMALS = 18;
+
+  @JSONSchema({
+    description: "The decimals of the native token."
+  })
+  public static NATIVE_TOKEN_DECIMALS = 8;
 
   constructor(
     vaultAddress: UserAlias,
@@ -163,11 +175,6 @@ export class LaunchpadSale extends ChainObject {
   public fetchNativeTokensInVault() {
     const nativeTokenInVault = new BigNumber(this.nativeTokenQuantity);
     return nativeTokenInVault.toString();
-  }
-
-  public fetchBasePrice() {
-    const basePriceBigNumber = new BigNumber(this.basePrice);
-    return basePriceBigNumber.toString();
   }
 
   public finalizeSale() {
