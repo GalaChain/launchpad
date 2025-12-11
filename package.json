@@ -1,6 +1,6 @@
 {
   "name": "@gala-chain/launchpad",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "GalaChain Launchpad Chaincode",
   "main": "lib/src/index.js",
   "types": "lib/src/index.d.ts",
