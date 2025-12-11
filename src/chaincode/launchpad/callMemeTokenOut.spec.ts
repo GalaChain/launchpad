@@ -143,7 +143,7 @@ describe("callMemeTokenOut", () => {
 
     // Then
     expect(response.Data).toMatchObject({
-      calculatedQuantity: "458291.30295364487969",
+      calculatedQuantity: "458291.302953644",
       extraFees: { reverseBondingCurve: "0", transactionFees: "0.00000000" }
     });
   });

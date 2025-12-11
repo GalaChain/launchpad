@@ -23,12 +23,13 @@ import {
 } from "@gala-chain/api";
 import BigNumber from "bignumber.js";
 import { Exclude, Type } from "class-transformer";
-import { IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
+import { IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, ValidateNested } from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
 
 import { ReverseBondingCurveConfigurationChainObject } from "./LaunchpadDtos";
 
 export enum SaleStatus {
+  UPCOMING = "Upcoming",
   ONGOING = "Ongoing",
   END = "Finished"
 }
@@ -48,6 +49,10 @@ export class LaunchpadSale extends ChainObject {
   @StringEnumProperty(SaleStatus)
   @IsNotEmpty()
   public saleStatus: SaleStatus;
+
+  @IsOptional()
+  @IsInt()
+  public saleStartTime?: number;
 
   @IsNotEmpty()
   @ValidateNested()
@@ -104,7 +109,7 @@ export class LaunchpadSale extends ChainObject {
   @JSONSchema({
     description: "The decimals of the selling token."
   })
-  public static SELLING_TOKEN_DECIMALS = 18;
+  public static SELLING_TOKEN_DECIMALS = 9;
 
   @JSONSchema({
     description: "The decimals of the native token."
@@ -115,7 +120,8 @@ export class LaunchpadSale extends ChainObject {
     vaultAddress: UserAlias,
     sellingToken: TokenInstanceKey,
     reverseBondingCurveConfiguration: ReverseBondingCurveConfigurationChainObject | undefined,
-    saleOwner: UserAlias
+    saleOwner: UserAlias,
+    saleStartTime?: number | undefined
   ) {
     super();
 
@@ -125,11 +131,20 @@ export class LaunchpadSale extends ChainObject {
     this.sellingToken = sellingToken;
     this.sellingTokenQuantity = "1e+7";
 
+    if (saleStartTime) {
+      this.saleStartTime = saleStartTime;
+    }
+
+    if (this.saleStartTime !== undefined && this.saleStartTime > 0) {
+      this.saleStatus = SaleStatus.UPCOMING;
+    } else {
+      this.saleStatus = SaleStatus.ONGOING;
+    }
+
     this.basePrice = new BigNumber(LaunchpadSale.BASE_PRICE);
     this.exponentFactor = new BigNumber("1166069000000");
     this.maxSupply = new BigNumber("1e+7");
     this.euler = new BigNumber("2.7182818284590452353602874713527");
-    this.saleStatus = SaleStatus.ONGOING;
 
     const nativeTokenInstance = new TokenInstanceKey();
     nativeTokenInstance.collection = "GALA";

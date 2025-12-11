@@ -27,6 +27,7 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsBoolean,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -116,6 +117,10 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
   public twitterUrl?: string;
 
   @IsOptional()
+  @IsInt()
+  public saleStartTime?: number;
+
+  @IsOptional()
   @ValidateNested()
   @Type(() => ReverseBondingCurveConfigurationDto)
   public reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationDto;
@@ -128,7 +133,8 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
     preBuyQuantity: BigNumber,
     tokenCollection: string,
     tokenCategory: string,
-    reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationDto
+    reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationDto,
+    saleStartTime?: number
   ) {
     super();
     this.tokenName = tokenName;
@@ -139,6 +145,10 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
     this.tokenCollection = tokenCollection;
     this.tokenCategory = tokenCategory;
     this.reverseBondingCurveConfiguration = reverseBondingCurveConfiguration;
+
+    if (saleStartTime !== undefined) {
+      this.saleStartTime = saleStartTime;
+    }
   }
 }
 

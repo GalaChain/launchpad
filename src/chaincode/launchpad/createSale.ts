@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ConflictError, TokenInstanceKey, asValidUserAlias } from "@gala-chain/api";
+import { ConflictError, DefaultError, TokenInstanceKey, asValidUserAlias } from "@gala-chain/api";
 import {
   GalaChainContext,
   createTokenClass,
@@ -23,7 +23,13 @@ import {
 } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { CreateSaleResDto, CreateTokenSaleDTO, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
+import {
+  CreateSaleResDto,
+  CreateTokenSaleDTO,
+  LaunchpadSale,
+  NativeTokenQuantityDto,
+  SaleStatus
+} from "../../api/types";
 import { PreConditionFailedError } from "../../api/utils/error";
 import { buyWithNative } from "./buyWithNative";
 
@@ -129,6 +135,23 @@ export async function createSale(
     );
     const tradeStatus = await buyWithNative(ctx, nativeTokenDto);
     isSaleFinalized = tradeStatus.isFinalized;
+  }
+
+  // handling the optional saleStartTime after the preBuyQuantity allows
+  // creators to still optionally specify a pre-buy even when a
+  // sale is marked Upcoming / Coming Soon.
+  // Otherwise `buyWithNative` would throw an error when validating the sale is active.
+  if (launchpadDetails.saleStartTime !== undefined) {
+    launchpad.saleStartTime = launchpadDetails.saleStartTime;
+
+    // handle edge case
+    // if a sale was immediately sold out with a pre-buy on creation,
+    // do not set the ended sale back to UPCOMING
+    if (launchpad.saleStatus !== SaleStatus.END) {
+      launchpad.saleStatus = SaleStatus.UPCOMING;
+    }
+
+    await putChainObject(ctx, launchpad);
   }
 
   // Return the response object
