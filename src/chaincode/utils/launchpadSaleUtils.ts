@@ -35,6 +35,18 @@ export async function fetchAndValidateSale(
   if (sale === undefined) {
     throw new NotFoundError("Sale record not found.");
   }
+
+  if (sale.saleStatus === SaleStatus.UPCOMING) {
+    if (sale.saleStartTime !== undefined && sale.saleStartTime > 0 && sale.saleStartTime < ctx.txUnixTime) {
+      sale.saleStatus = SaleStatus.ONGOING;
+    } else {
+      throw new DefaultError(
+        `Upcoming: This sale is coming soon. ` +
+          `${sale.saleStartTime ? "Sale starts at: " + sale.saleStartTime + " Unix time." : "Start time TBD."}`
+      );
+    }
+  }
+
   if (sale.saleStatus === SaleStatus.END) {
     throw new DefaultError("This sale has already ended.");
   }
