@@ -27,7 +27,13 @@ import { currency, fixture, transactionError, transactionSuccess, users } from "
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
-import { LaunchpadFeeConfig, LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
+import {
+  ExactTokenQuantityDto,
+  LaunchpadFeeConfig,
+  LaunchpadSale,
+  NativeTokenQuantityDto,
+  TradeResDto
+} from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
 
@@ -46,13 +52,15 @@ describe("buyWithNative", () => {
 
   beforeEach(() => {
     //Given
-    currencyClass = currency.tokenClass();
+    currencyClass = plainToInstance(TokenClass, {
+      ...currency.tokenClassPlain(),
+      decimals: LaunchpadSale.SELLING_TOKEN_DECIMALS
+    });
     currencyInstance = currency.tokenInstance();
-    launchpadGalaClass = launchpadgala.tokenClass();
 
     launchpadGalaClass = plainToInstance(TokenClass, {
       ...launchpadgala.tokenClassPlain(),
-      decimals: 18
+      decimals: LaunchpadSale.NATIVE_TOKEN_DECIMALS
     });
 
     launchpadGalaInstance = launchpadgala.tokenInstance();
@@ -154,8 +162,8 @@ describe("buyWithNative", () => {
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "150",
       totalFees: "0",
-      totalTokenSold: "2101667.8890651635",
-      outputQuantity: "2101667.8890651635",
+      totalTokenSold: "2101667.889065163",
+      outputQuantity: "2101667.889065163",
       tokenName: "AUTOMATEDTESTCOIN",
       tradeType: "Buy",
       vaultAddress: "service|GALA$Unit$none$none$launchpad",
@@ -200,8 +208,8 @@ describe("buyWithNative", () => {
     const expectedResponse = plainToInstance(TradeResDto, {
       inputQuantity: "1000",
       totalFees: "320",
-      totalTokenSold: "3663321.3628130557",
-      outputQuantity: "3663321.3628130557",
+      totalTokenSold: "3663321.362813055",
+      outputQuantity: "3663321.362813055",
       tokenName: "AUTOMATEDTESTCOIN",
       tradeType: "Buy",
       vaultAddress: "service|GALA$Unit$none$none$launchpad",
@@ -256,4 +264,91 @@ describe("buyWithNative", () => {
       )
     );
   });
+
+  it("should return inverse native tokens when buying and selling tokens", async () => {
+    //Given
+    salelaunchpadGalaBalance.subtractQuantity(new BigNumber("1e+7"), 0);
+    saleCurrencyBalance.addQuantity(new BigNumber("1e+7"));
+    userlaunchpadGalaBalance.addQuantity(new BigNumber("1e+7"));
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    const arr: string[] = [
+      "31.27520343",
+      "100.3731319",
+      "322.1326962",
+      "1033.837164",
+      "3317.947211",
+      "10648.46001",
+      "34174.65481",
+      "109678.4915",
+      "351996.8694",
+      "1129679.88999"
+    ];
+
+    const sellingArr: string[] = [];
+    const sellArr: string[] = [
+      "1000000.000060721",
+      "1000000.000017497",
+      "999999.999868935",
+      "1000000.000187964",
+      "999999.999879254",
+      "999999.999929098",
+      "1000000.000096442",
+      "999999.999800915",
+      "1000000.000112742",
+      "999999.000293124"
+    ];
+
+    // When - Buy tokens using native token amounts from arr
+    for (let i = 0; i < arr.length; i++) {
+      let nativeCoins = Number(arr[i]);
+      nativeCoins = roundToDecimal(nativeCoins, 8);
+
+      const dto = new NativeTokenQuantityDto(vaultAddress, new BigNumber(nativeCoins));
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.testUser1.privateKey);
+
+      const buyTokenRes = await contract.BuyWithNative(ctx, dto);
+      expect(buyTokenRes).toEqual(transactionSuccess());
+    }
+
+    // When - Sell tokens back in reverse order
+    for (let i = sellArr.length - 1; i >= 0; i--) {
+      const sellDto = new ExactTokenQuantityDto(vaultAddress, new BigNumber(sellArr[i]));
+      sellDto.uniqueKey = randomUniqueKey();
+      sellDto.sign(users.testUser1.privateKey);
+
+      const sellTokenRes = await contract.SellExactToken(ctx, sellDto);
+      expect(sellTokenRes).toEqual(transactionSuccess());
+      sellingArr.push(sellTokenRes.Data?.outputQuantity || "0");
+    }
+
+    // Then - Verify sellingArr is the inverse of arr with the extra ""
+    const expectedSellingArr = [...arr].reverse();
+
+    // Compare each element, checking that values match up to 4 decimal places
+    const tolerance = new BigNumber("0.0001"); // 4 decimal places tolerance
+    for (let i = 1; i < sellingArr.length; i++) {
+      const sellingValue = new BigNumber(sellingArr[i]);
+      const expectedValue = new BigNumber(expectedSellingArr[i]);
+      const difference = sellingValue.minus(expectedValue).abs();
+      expect(difference.isLessThanOrEqualTo(tolerance)).toBe(true);
+    }
+  });
 });
+function roundToDecimal(value, decimals) {
+  const factor = Math.pow(10, decimals);
+  return Math.round(value * factor) / factor;
+}

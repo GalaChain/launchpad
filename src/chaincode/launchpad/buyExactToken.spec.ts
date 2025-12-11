@@ -60,7 +60,7 @@ describe("buyWithNative", () => {
 
     launchpadGalaClass = plainToInstance(TokenClass, {
       ...launchpadgala.tokenClassPlain(),
-      decimals: 8
+      decimals: LaunchpadSale.NATIVE_TOKEN_DECIMALS
     });
 
     vaultAddress = asValidUserAlias(`service|${launchpadGalaClassKey.toStringKey()}$launchpad`);

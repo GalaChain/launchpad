@@ -109,7 +109,7 @@ export class LaunchpadSale extends ChainObject {
   @JSONSchema({
     description: "The decimals of the selling token."
   })
-  public static SELLING_TOKEN_DECIMALS = 18;
+  public static SELLING_TOKEN_DECIMALS = 9;
 
   @JSONSchema({
     description: "The decimals of the native token."
