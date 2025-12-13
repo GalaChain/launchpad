@@ -32,6 +32,7 @@ import {
 } from "../../api/types";
 import { PreConditionFailedError } from "../../api/utils/error";
 import { buyWithNative } from "./buyWithNative";
+import { fetchOrCreateLaunchpadTradeData } from "./fetchLaunchpadTradeData";
 
 /**
  * Creates a new token sale (Launchpad) in the GalaChain environment.
@@ -153,6 +154,10 @@ export async function createSale(
 
     await putChainObject(ctx, launchpad);
   }
+
+  const tradeData = await fetchOrCreateLaunchpadTradeData(ctx, { vaultAddress: launchpad.vaultAddress });
+
+  await putChainObject(ctx, tradeData);
 
   // Return the response object
   return {

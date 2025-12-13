@@ -41,6 +41,7 @@ import Decimal from "decimal.js";
 import { LaunchpadFinalizeFeeAllocation, LaunchpadSale } from "../../api/types";
 import { PreConditionFailedError } from "../../api/utils/error";
 import { fetchLaunchpadFeeAddress, getBondingConstants } from "../utils";
+import { fetchOrCreateLaunchpadTradeData } from "./fetchLaunchpadTradeData";
 
 export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): Promise<void> {
   const key = ctx.stub.createCompositeKey(LaunchpadFinalizeFeeAllocation.INDEX_KEY, []);
@@ -59,13 +60,26 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
   const memeToken = sale.fetchSellingTokenInstanceKey();
   const vaultAddressAlias = await resolveUserAlias(ctx, sale.vaultAddress);
 
+  const creatorRewardsV1 = new BigNumber(sale.nativeTokenQuantity)
+    .times(ownerAllocationPercentage)
+    .decimalPlaces(LaunchpadSale.NATIVE_TOKEN_DECIMALS, BigNumber.ROUND_DOWN);
+
+  const tradeData = await fetchOrCreateLaunchpadTradeData(ctx, { vaultAddress: sale.vaultAddress });
+
+  const creatorRewardsV2 = tradeData.galaVolumeTraded
+    .times(ownerAllocationPercentage)
+    .decimalPlaces(LaunchpadSale.NATIVE_TOKEN_DECIMALS, BigNumber.ROUND_DOWN);
+
+  // todo: finalize business logic for pre-existing sales created prior to new total volume calculation
+  const creatorRewards = creatorRewardsV2.isGreaterThan(creatorRewardsV1)
+    ? creatorRewardsV2
+    : creatorRewardsV1;
+
   await transferToken(ctx, {
     from: vaultAddressAlias,
     to: sale.saleOwner,
     tokenInstanceKey: nativeToken,
-    quantity: new BigNumber(sale.nativeTokenQuantity)
-      .times(ownerAllocationPercentage)
-      .decimalPlaces(LaunchpadSale.NATIVE_TOKEN_DECIMALS, BigNumber.ROUND_DOWN),
+    quantity: creatorRewards,
     allowancesToUse: [],
     authorizedOnBehalf: {
       callingOnBehalf: vaultAddressAlias,
