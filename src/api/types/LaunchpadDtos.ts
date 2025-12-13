@@ -39,6 +39,7 @@ import {
 
 import { BigNumberIsNotNegative, BigNumberLessThanOrEqualOther, BigNumberMax } from "../validators";
 import { IsNonZeroBigNumber } from "../validators";
+import { LaunchpadTradeData } from "./LaunchpadTradeData";
 
 export class ReverseBondingCurveConfigurationChainObject extends ChainObject {
   @BigNumberProperty()
@@ -322,6 +323,11 @@ export class TradeResDto {
 
   @IsString()
   public totalTokenSold: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LaunchpadTradeData)
+  public tradeData?: LaunchpadTradeData;
 }
 
 export class FetchSaleDto extends ChainCallDTO {
