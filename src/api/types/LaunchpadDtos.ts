@@ -125,6 +125,12 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
   @Type(() => ReverseBondingCurveConfigurationDto)
   public reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationDto;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(100)
+  @Max(100)
+  public adjustableSupplyMultiplier?: number;
+
   constructor(
     tokenName: string,
     tokenSymbol: string,
@@ -134,7 +140,8 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
     tokenCollection: string,
     tokenCategory: string,
     reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationDto,
-    saleStartTime?: number
+    saleStartTime?: number,
+    adjustableSupplyMultiplier?: number
   ) {
     super();
     this.tokenName = tokenName;
@@ -148,6 +155,10 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
 
     if (saleStartTime !== undefined) {
       this.saleStartTime = saleStartTime;
+    }
+
+    if (adjustableSupplyMultiplier !== undefined) {
+      this.adjustableSupplyMultiplier = adjustableSupplyMultiplier;
     }
   }
 }

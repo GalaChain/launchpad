@@ -29,15 +29,26 @@ function calculateTokensPurchasable(
   nativeTokens: Decimal,
   totalTokensSold: Decimal,
   nativeTokenDecimals: number,
-  sellingTokenDecimals: number
+  sellingTokenDecimals: number,
+  adjustableSupplyPriceMultiplier?: number
 ): [string, string] {
-  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
-  const { exponentFactor, euler, decimals } = getBondingConstants();
+  const basePrice =
+    adjustableSupplyPriceMultiplier && adjustableSupplyPriceMultiplier > 0
+      ? new Decimal(LaunchpadSale.BASE_PRICE).dividedBy(adjustableSupplyPriceMultiplier)
+      : new Decimal(LaunchpadSale.BASE_PRICE);
+
+  const { exponentFactor, euler, decimals } = getBondingConstants(adjustableSupplyPriceMultiplier);
 
   // Round native tokens, then calculate tokens based on that rounded amount
   const roundedNativeTokens = nativeTokens.toDecimalPlaces(nativeTokenDecimals, Decimal.ROUND_UP);
 
-  // Calculate tokens purchasable: newTokens = (decimals / exponentFactor) * ln((nativeTokens * exponentFactor / basePrice) + e^(exponentFactor * totalTokensSold / decimals)) - totalTokensSold
+  // Calculate tokens purchasable:
+  // newTokens = (decimals / exponentFactor) *
+  // ln(
+  //   (nativeTokens * exponentFactor / basePrice) +
+  //   e^(exponentFactor * totalTokensSold / decimals)
+  // ) -
+  // totalTokensSold
   // Where:
   //   constant = nativeTokens * exponentFactor / basePrice
   //   exponent1 = exponentFactor * totalTokensSold / decimals
@@ -55,9 +66,13 @@ function calculateTokensPurchasable(
   const result = lnEthScaledBase.minus(totalTokensSold);
   let roundedResult = result.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_DOWN);
 
-  // Cap total supply to 10 million
-  if (roundedResult.add(totalTokensSold).greaterThan(new Decimal("1e+7"))) {
-    roundedResult = new Decimal("1e+7").minus(new Decimal(totalTokensSold));
+  // Cap total supply
+  const supplyCap = adjustableSupplyPriceMultiplier
+    ? new BigNumber(1e7).times(adjustableSupplyPriceMultiplier).toString()
+    : "1e+7";
+
+  if (roundedResult.add(totalTokensSold).greaterThan(new Decimal(supplyCap))) {
+    roundedResult = new Decimal(supplyCap).minus(new Decimal(totalTokensSold));
   }
 
   return [roundedNativeTokens.toFixed(), roundedResult.toFixed()];
@@ -119,7 +134,8 @@ export async function callMemeTokenOut(
     nativeTokens,
     totalTokensSold,
     nativeTokenDecimals,
-    sellingTokenDecimals
+    sellingTokenDecimals,
+    sale?.adjustableSupplyMultiplier
   );
 
   // Fetch fee configuration and return result

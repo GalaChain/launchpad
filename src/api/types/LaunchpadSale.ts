@@ -23,7 +23,16 @@ import {
 } from "@gala-chain/api";
 import BigNumber from "bignumber.js";
 import { Exclude, Type } from "class-transformer";
-import { IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, ValidateNested } from "class-validator";
+import {
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Min,
+  ValidateNested
+} from "class-validator";
 import { JSONSchema } from "class-validator-jsonschema";
 
 import { ReverseBondingCurveConfigurationChainObject } from "./LaunchpadDtos";
@@ -93,6 +102,15 @@ export class LaunchpadSale extends ChainObject {
   @Type(() => ReverseBondingCurveConfigurationChainObject)
   public reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationChainObject;
 
+  /**
+   * Optional multiplier used to scale token output (both in bonding curve calculations and initial
+   * minting) while preserving the same economics and curve shape.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  public adjustableSupplyMultiplier?: number;
+
   @JSONSchema({
     description:
       "The market cap has been calculated using the bonding curve equations to approximate a specific final price."
@@ -121,7 +139,8 @@ export class LaunchpadSale extends ChainObject {
     sellingToken: TokenInstanceKey,
     reverseBondingCurveConfiguration: ReverseBondingCurveConfigurationChainObject | undefined,
     saleOwner: UserAlias,
-    saleStartTime?: number | undefined
+    saleStartTime?: number | undefined,
+    adjustableSupplyMultiplier?: number
   ) {
     super();
 
@@ -129,7 +148,6 @@ export class LaunchpadSale extends ChainObject {
     this.saleOwner = saleOwner;
 
     this.sellingToken = sellingToken;
-    this.sellingTokenQuantity = "1e+7";
 
     if (saleStartTime) {
       this.saleStartTime = saleStartTime;
@@ -141,9 +159,19 @@ export class LaunchpadSale extends ChainObject {
       this.saleStatus = SaleStatus.ONGOING;
     }
 
-    this.basePrice = new BigNumber(LaunchpadSale.BASE_PRICE);
-    this.exponentFactor = new BigNumber("1166069000000");
-    this.maxSupply = new BigNumber("1e+7");
+    if (adjustableSupplyMultiplier !== undefined) {
+      this.adjustableSupplyMultiplier = adjustableSupplyMultiplier;
+      this.basePrice = new BigNumber(LaunchpadSale.BASE_PRICE).dividedBy(adjustableSupplyMultiplier);
+      this.exponentFactor = new BigNumber("1166069000000");
+      this.maxSupply = new BigNumber("1e+7").times(adjustableSupplyMultiplier);
+      this.sellingTokenQuantity = new BigNumber("1e+7").times(adjustableSupplyMultiplier).toString();
+    } else {
+      this.basePrice = new BigNumber(LaunchpadSale.BASE_PRICE);
+      this.exponentFactor = new BigNumber("1166069000000");
+      this.maxSupply = new BigNumber("1e+7");
+      this.sellingTokenQuantity = "1e+7";
+    }
+
     this.euler = new BigNumber("2.7182818284590452353602874713527");
 
     const nativeTokenInstance = new TokenInstanceKey();
