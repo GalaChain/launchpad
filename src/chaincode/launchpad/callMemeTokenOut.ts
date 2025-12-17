@@ -30,14 +30,14 @@ function calculateTokensPurchasable(
   totalTokensSold: Decimal,
   nativeTokenDecimals: number,
   sellingTokenDecimals: number,
-  adjustableSupplyPriceMultiplier?: number
+  adjustableSupplyMultiplier?: number
 ): [string, string] {
   const basePrice =
-    adjustableSupplyPriceMultiplier && adjustableSupplyPriceMultiplier > 0
-      ? new Decimal(LaunchpadSale.BASE_PRICE).dividedBy(adjustableSupplyPriceMultiplier)
+    adjustableSupplyMultiplier && adjustableSupplyMultiplier > 0
+      ? new Decimal(LaunchpadSale.BASE_PRICE).dividedBy(adjustableSupplyMultiplier)
       : new Decimal(LaunchpadSale.BASE_PRICE);
 
-  const { exponentFactor, euler, decimals } = getBondingConstants(adjustableSupplyPriceMultiplier);
+  const { exponentFactor, euler, decimals } = getBondingConstants(adjustableSupplyMultiplier);
 
   // Round native tokens, then calculate tokens based on that rounded amount
   const roundedNativeTokens = nativeTokens.toDecimalPlaces(nativeTokenDecimals, Decimal.ROUND_UP);
@@ -67,8 +67,8 @@ function calculateTokensPurchasable(
   let roundedResult = result.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_DOWN);
 
   // Cap total supply
-  const supplyCap = adjustableSupplyPriceMultiplier
-    ? new BigNumber(1e7).times(adjustableSupplyPriceMultiplier).toString()
+  const supplyCap = adjustableSupplyMultiplier
+    ? new BigNumber(1e7).times(adjustableSupplyMultiplier).toString()
     : "1e+7";
 
   if (roundedResult.add(totalTokensSold).greaterThan(new Decimal(supplyCap))) {

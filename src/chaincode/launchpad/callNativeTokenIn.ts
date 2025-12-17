@@ -30,16 +30,14 @@ function calculateNativeTokensRequired(
   totalTokensSold: Decimal,
   sellingTokenDecimals: number,
   nativeTokenDecimals: number,
-  adjustableSupplyPriceMultiplier?: number
+  adjustableSupplyMultiplier?: number
 ): [string, string] {
-  const multiplier =
-    adjustableSupplyPriceMultiplier && adjustableSupplyPriceMultiplier > 0
-      ? adjustableSupplyPriceMultiplier
-      : 1;
+  const basePrice =
+    adjustableSupplyMultiplier && adjustableSupplyMultiplier > 0
+      ? new Decimal(LaunchpadSale.BASE_PRICE).dividedBy(adjustableSupplyMultiplier)
+      : new Decimal(LaunchpadSale.BASE_PRICE);
 
-  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE).dividedBy(multiplier);
-
-  const { exponentFactor, euler, decimals } = getBondingConstants(adjustableSupplyPriceMultiplier);
+  const { exponentFactor, euler, decimals } = getBondingConstants(adjustableSupplyMultiplier);
 
   // Round tokens first, then calculate native tokens based on that rounded amount
   const roundedTokensToBuy = tokensToBuy.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_DOWN);
