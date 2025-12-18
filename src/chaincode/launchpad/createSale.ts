@@ -114,9 +114,10 @@ export async function createSale(
     quantity: new BigNumber("2e+7").times(supplyCapMultiplier)
   });
 
-  //Update token class to remove the calling user as an authority in the token class
+  // Update token class to remove the calling user as an authority in the token class
   await updateTokenClass(ctx, {
     tokenClass: tokenInstanceKey.getTokenClassKey(),
+    overwriteAuthorities: true,
     authorities: [vaultAddress]
   });
 
