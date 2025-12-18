@@ -21,6 +21,7 @@ import { fetchAndValidateSale } from "../utils";
 import { callMemeTokenOut } from "./callMemeTokenOut";
 import { transferTransactionFees } from "./fees";
 import { finalizeSale } from "./finaliseSale";
+import { writeTradeData } from "./writeTradeData";
 
 /**
  * Executes the purchase of tokens using a specified amount of native tokens.
@@ -107,6 +108,13 @@ export async function buyWithNative(
   // Update sale object with purchase data
   sale.buyToken(tokensToBuy, nativeTokensRequired);
   await putChainObject(ctx, sale);
+
+  const galaVolumeTraded = nativeTokensRequired.abs();
+
+  const tradeData = await writeTradeData(ctx, {
+    vaultAddress: sale.vaultAddress,
+    galaVolumeTraded: galaVolumeTraded
+  });
 
   // Finalize sale if it's complete
   if (isSaleFinalized) {
