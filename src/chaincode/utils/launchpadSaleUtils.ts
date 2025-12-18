@@ -54,9 +54,13 @@ export async function fetchAndValidateSale(
   return sale;
 }
 
-export function getBondingConstants() {
+export function getBondingConstants(multiplier?: number) {
+  const exponentFactor =
+    multiplier && multiplier > 0
+      ? new Decimal("1166069000000").times(1 / multiplier)
+      : new Decimal("1166069000000");
   return {
-    exponentFactor: new Decimal("1166069000000"), // exponent factor / b
+    exponentFactor: exponentFactor, // exponent factor / b
     euler: new Decimal("2.7182818284590452353602874713527"), // e
     decimals: new Decimal("1e+18") // scaling factor for decimals
   };
