@@ -347,8 +347,68 @@ describe("buyWithNative", () => {
       expect(difference.isLessThanOrEqualTo(tolerance)).toBe(true);
     }
   });
+
+  test("Adjustable supply: Single transaction", async () => {
+    //Given
+    const multiplier = 100;
+
+    sale = new LaunchpadSale(
+      vaultAddress,
+      currencyInstance.instanceKeyObj(),
+      undefined,
+      users.testUser1.identityKey,
+      undefined,
+      multiplier
+    );
+
+    saleCurrencyBalance = plainToInstance(TokenBalance, {
+      ...currency.tokenBalance(),
+      owner: vaultAddress,
+      quantity: new BigNumber("2e+7").times(multiplier)
+    });
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    const dto = new NativeTokenQuantityDto(vaultAddress, new BigNumber("150"));
+
+    dto.uniqueKey = randomUniqueKey();
+    dto.sign(users.testUser1.privateKey);
+
+    const expectedOutput = new BigNumber("2101667.8890651635").times(multiplier).toString();
+    const expectedResponse = plainToInstance(TradeResDto, {
+      inputQuantity: "150",
+      totalFees: "0",
+      totalTokenSold: expectedOutput,
+      outputQuantity: expectedOutput,
+      tokenName: "AUTOMATEDTESTCOIN",
+      tradeType: "Buy",
+      vaultAddress: "service|GALA$Unit$none$none$launchpad",
+      userAddress: "client|testUser1",
+      isFinalized: false,
+      functionName: "BuyWithNative",
+      uniqueKey: dto.uniqueKey
+    });
+
+    //When
+    const buyTokenRes = await contract.BuyWithNative(ctx, dto);
+
+    //Then
+    expect(buyTokenRes).toEqual(transactionSuccess(expectedResponse));
+  });
 });
-function roundToDecimal(value, decimals) {
+function roundToDecimal(value: number, decimals: number) {
   const factor = Math.pow(10, decimals);
   return Math.round(value * factor) / factor;
 }

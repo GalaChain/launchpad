@@ -30,15 +30,21 @@ function calculateMemeTokensRequired(
   sale: LaunchpadSale,
   requestedNativeTokenQuantity: BigNumber,
   nativeTokenDecimals: number,
-  sellingTokenDecimals: number
+  sellingTokenDecimals: number,
+  adjustableSupplyMultiplier?: number
 ): [string, string] {
   const totalTokensSold = new Decimal(sale.fetchTokensSold()); // current tokens sold / x
   let nativeTokens = new Decimal(requestedNativeTokenQuantity.toString()).toDecimalPlaces(
     nativeTokenDecimals,
     Decimal.ROUND_DOWN
   );
-  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE); // base price / a
-  const { exponentFactor, euler, decimals } = getBondingConstants();
+
+  const basePrice =
+    adjustableSupplyMultiplier && adjustableSupplyMultiplier > 0
+      ? new Decimal(LaunchpadSale.BASE_PRICE).dividedBy(adjustableSupplyMultiplier)
+      : new Decimal(LaunchpadSale.BASE_PRICE);
+
+  const { exponentFactor, euler, decimals } = getBondingConstants(adjustableSupplyMultiplier);
 
   const nativeTokenInVault = new Decimal(sale.nativeTokenQuantity);
   if (nativeTokens.greaterThan(nativeTokenInVault)) {
@@ -90,7 +96,8 @@ export async function callMemeTokenIn(
     sale,
     sellTokenDTO.nativeTokenQuantity,
     nativeTokenDecimals,
-    sellingTokenDecimals
+    sellingTokenDecimals,
+    sale.adjustableSupplyMultiplier
   );
 
   return {

@@ -86,6 +86,8 @@ export async function createSale(
     throw new ConflictError("This token and a sale associated with it already exists");
   }
 
+  const supplyCapMultiplier = launchpadDetails.adjustableSupplyMultiplier ?? 1;
+
   // Call createTokenClass
   await createTokenClass(ctx, {
     network: "GC",
@@ -96,8 +98,8 @@ export async function createSale(
     symbol: launchpadDetails.tokenSymbol,
     description: launchpadDetails.tokenDescription,
     image: launchpadDetails.tokenImage,
-    maxSupply: new BigNumber("2e+7"),
-    maxCapacity: new BigNumber("2e+7"),
+    maxSupply: new BigNumber("2e+7").times(supplyCapMultiplier),
+    maxCapacity: new BigNumber("2e+7").times(supplyCapMultiplier),
     totalMintAllowance: new BigNumber(0),
     totalSupply: new BigNumber(0),
     totalBurned: new BigNumber(0),
@@ -109,12 +111,13 @@ export async function createSale(
     tokenClassKey: tokenInstanceKey.getTokenClassKey(),
     tokenInstance: new BigNumber(0),
     owner: vaultAddress,
-    quantity: new BigNumber("2e+7")
+    quantity: new BigNumber("2e+7").times(supplyCapMultiplier)
   });
 
-  //Update token class to remove the calling user as an authority in the token class
+  // Update token class to remove the calling user as an authority in the token class
   await updateTokenClass(ctx, {
     tokenClass: tokenInstanceKey.getTokenClassKey(),
+    overwriteAuthorities: true,
     authorities: [vaultAddress]
   });
 
@@ -123,7 +126,9 @@ export async function createSale(
     vaultAddress,
     tokenInstanceKey,
     launchpadDetails.reverseBondingCurveConfiguration?.toChainObject(),
-    ctx.callingUser
+    ctx.callingUser,
+    undefined,
+    launchpadDetails.adjustableSupplyMultiplier
   );
 
   await putChainObject(ctx, launchpad);
