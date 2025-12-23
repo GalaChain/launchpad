@@ -62,7 +62,16 @@ export async function createSale(
   let isSaleFinalized = false;
   // Validate input parameters
 
-  if (!launchpadDetails.websiteUrl && !launchpadDetails.telegramUrl && !launchpadDetails.twitterUrl) {
+  const hasAnySocial =
+    launchpadDetails.websiteUrl ||
+    launchpadDetails.telegramUrl ||
+    launchpadDetails.twitterUrl ||
+    launchpadDetails.instagramUrl ||
+    launchpadDetails.facebookUrl ||
+    launchpadDetails.redditUrl ||
+    launchpadDetails.tiktokUrl;
+
+  if (!hasAnySocial) {
     throw new PreConditionFailedError("Token sale creation requires atleast one social link.");
   }
 
@@ -168,6 +177,10 @@ export async function createSale(
     websiteUrl: launchpadDetails.websiteUrl ? launchpadDetails.websiteUrl : "",
     telegramUrl: launchpadDetails.telegramUrl ? launchpadDetails.telegramUrl : "",
     twitterUrl: launchpadDetails.twitterUrl ? launchpadDetails.twitterUrl : "",
+    instagramUrl: launchpadDetails.instagramUrl ? launchpadDetails.instagramUrl : "",
+    facebookUrl: launchpadDetails.facebookUrl ? launchpadDetails.facebookUrl : "",
+    redditUrl: launchpadDetails.redditUrl ? launchpadDetails.redditUrl : "",
+    tiktokUrl: launchpadDetails.tiktokUrl ? launchpadDetails.tiktokUrl : "",
     initialBuyQuantity: launchpadDetails.preBuyQuantity.toFixed(),
     vaultAddress: vaultAddress,
     creatorAddress: ctx.callingUser,

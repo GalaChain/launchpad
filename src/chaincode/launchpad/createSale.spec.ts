@@ -217,6 +217,10 @@ describe("createSale", () => {
     createSaleDto.websiteUrl = "https://socialtoken.com";
     createSaleDto.telegramUrl = "https://t.me/socialtoken";
     createSaleDto.twitterUrl = "https://twitter.com/socialtoken";
+    createSaleDto.instagramUrl = "https://instagram.com/socialtoken";
+    createSaleDto.facebookUrl = "https://facebook.com/socialtoken";
+    createSaleDto.redditUrl = "https://reddit.com/r/socialtoken";
+    createSaleDto.tiktokUrl = "https://tiktok.com/@socialtoken";
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -229,6 +233,10 @@ describe("createSale", () => {
     expect(response.Data?.websiteUrl).toBe("https://socialtoken.com");
     expect(response.Data?.telegramUrl).toBe("https://t.me/socialtoken");
     expect(response.Data?.twitterUrl).toBe("https://twitter.com/socialtoken");
+    expect(response.Data?.instagramUrl).toBe("https://instagram.com/socialtoken");
+    expect(response.Data?.facebookUrl).toBe("https://facebook.com/socialtoken");
+    expect(response.Data?.redditUrl).toBe("https://reddit.com/r/socialtoken");
+    expect(response.Data?.tiktokUrl).toBe("https://tiktok.com/@socialtoken");
   });
 
   it("should create sale with custom token image", async () => {

@@ -116,6 +116,22 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
   @IsOptional()
   public twitterUrl?: string;
 
+  @IsString()
+  @IsOptional()
+  public instagramUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  public facebookUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  public redditUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  public tiktokUrl?: string;
+
   @IsOptional()
   @IsInt()
   public saleStartTime?: number;
@@ -184,6 +200,30 @@ export class CreateSaleResDto {
 
   @IsOptional()
   public twitterUrl?: string;
+
+  @IsOptional()
+  public instagramUrl?: string;
+
+  @IsOptional()
+  public facebookUrl?: string;
+
+  @IsOptional()
+  public redditUrl?: string;
+
+  @IsOptional()
+  public tiktokUrl?: string;
+
+  @IsOptional()
+  public instagramUrl?: string;
+
+  @IsOptional()
+  public facebookUrl?: string;
+
+  @IsOptional()
+  public redditUrl?: string;
+
+  @IsOptional()
+  public tiktokUrl?: string;
 
   @IsNotEmpty()
   public initialBuyQuantity: string;
