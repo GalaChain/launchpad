@@ -34,7 +34,6 @@ describe("createSale", () => {
       "TestCollection",
       "TestCategory"
     );
-    createSaleDto.websiteUrl = "https://example.com";
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -52,60 +51,6 @@ describe("createSale", () => {
     expect(response.Data?.vaultAddress).toBeDefined();
     expect(response.Data?.creatorAddress).toBe(users.testUser1.identityKey);
     expect(response.Data?.isFinalized).toBe(false);
-  });
-
-  it("should create token sale with telegram URL", async () => {
-    // Given
-    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1);
-
-    const createSaleDto = new CreateTokenSaleDTO(
-      "Telegram Token",
-      "TG",
-      "A token with telegram link",
-      "https://example.com/tg.png",
-      new BigNumber(0),
-      "TelegramCollection",
-      "SocialCategory"
-    );
-    createSaleDto.telegramUrl = "https://t.me/testtoken";
-    createSaleDto.uniqueKey = randomUniqueKey();
-
-    const signedDto = createSaleDto.signed(users.testUser1.privateKey);
-
-    // When
-    const response = await contract.CreateSale(ctx, signedDto);
-
-    // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data?.telegramUrl).toBe("https://t.me/testtoken");
-    expect(response.Data?.websiteUrl).toBe("");
-    expect(response.Data?.twitterUrl).toBe("");
-  });
-
-  it("should create token sale with twitter URL", async () => {
-    // Given
-    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1);
-
-    const createSaleDto = new CreateTokenSaleDTO(
-      "Twitter Token",
-      "TWT",
-      "A token with twitter link",
-      "https://example.com/twt.png",
-      new BigNumber(0),
-      "TwitterCollection",
-      "SocialCategory"
-    );
-    createSaleDto.twitterUrl = "https://twitter.com/testtoken";
-    createSaleDto.uniqueKey = randomUniqueKey();
-
-    const signedDto = createSaleDto.signed(users.testUser1.privateKey);
-
-    // When
-    const response = await contract.CreateSale(ctx, signedDto);
-
-    // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data?.twitterUrl).toBe("https://twitter.com/testtoken");
   });
 
   it("should create token sale with pre-buy amount", async () => {
@@ -162,7 +107,6 @@ describe("createSale", () => {
       "PreBuyCollection",
       "PreBuyCategory"
     );
-    createSaleDto.websiteUrl = "https://example.com";
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -188,7 +132,6 @@ describe("createSale", () => {
       "LowerCollection",
       "LowerCategory"
     );
-    createSaleDto.websiteUrl = "https://example.com";
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);
@@ -201,35 +144,7 @@ describe("createSale", () => {
     expect(response.Data?.symbol).toBe("LOWER"); // Should be converted to uppercase
   });
 
-  it("should create sale with all social media URLs", async () => {
-    // Given
-    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1);
-
-    const createSaleDto = new CreateTokenSaleDTO(
-      "Social Token",
-      "SOC",
-      "A fully connected social token",
-      "https://example.com/soc.png",
-      new BigNumber(0),
-      "SocialCollection",
-      "FullSocialCategory"
-    );
-    createSaleDto.websiteUrl = "https://socialtoken.com";
-    createSaleDto.telegramUrl = "https://t.me/socialtoken";
-    createSaleDto.twitterUrl = "https://twitter.com/socialtoken";
-    createSaleDto.uniqueKey = randomUniqueKey();
-
-    const signedDto = createSaleDto.signed(users.testUser1.privateKey);
-
-    // When
-    const response = await contract.CreateSale(ctx, signedDto);
-
-    // Then
-    expect(response.Status).toBe(1);
-    expect(response.Data?.websiteUrl).toBe("https://socialtoken.com");
-    expect(response.Data?.telegramUrl).toBe("https://t.me/socialtoken");
-    expect(response.Data?.twitterUrl).toBe("https://twitter.com/socialtoken");
-  });
+  // Social links are now handled off-chain (DB source of truth); chain no longer returns them.
 
   it("should create sale with custom token image", async () => {
     // Given
@@ -244,7 +159,6 @@ describe("createSale", () => {
       "ImageCollection",
       "ImageCategory"
     );
-    createSaleDto.websiteUrl = "https://example.com";
     createSaleDto.uniqueKey = randomUniqueKey();
 
     const signedDto = createSaleDto.signed(users.testUser1.privateKey);

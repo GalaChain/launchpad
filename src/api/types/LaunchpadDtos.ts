@@ -104,18 +104,6 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
   @BigNumberProperty()
   public preBuyQuantity: BigNumber;
 
-  @IsString()
-  @IsOptional()
-  public websiteUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  public telegramUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  public twitterUrl?: string;
-
   @IsOptional()
   @IsInt()
   public saleStartTime?: number;
@@ -175,15 +163,6 @@ export class CreateSaleResDto {
 
   @IsNotEmpty()
   public description: string;
-
-  @IsOptional()
-  public websiteUrl?: string;
-
-  @IsOptional()
-  public telegramUrl?: string;
-
-  @IsOptional()
-  public twitterUrl?: string;
 
   @IsNotEmpty()
   public initialBuyQuantity: string;

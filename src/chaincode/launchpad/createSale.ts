@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ConflictError, DefaultError, TokenInstanceKey, asValidUserAlias } from "@gala-chain/api";
+import { ConflictError, TokenInstanceKey, asValidUserAlias } from "@gala-chain/api";
 import {
   GalaChainContext,
   createTokenClass,
@@ -30,7 +30,6 @@ import {
   NativeTokenQuantityDto,
   SaleStatus
 } from "../../api/types";
-import { PreConditionFailedError } from "../../api/utils/error";
 import { buyWithNative } from "./buyWithNative";
 
 /**
@@ -61,10 +60,6 @@ export async function createSale(
 ): Promise<CreateSaleResDto> {
   let isSaleFinalized = false;
   // Validate input parameters
-
-  if (!launchpadDetails.websiteUrl && !launchpadDetails.telegramUrl && !launchpadDetails.twitterUrl) {
-    throw new PreConditionFailedError("Token sale creation requires atleast one social link.");
-  }
 
   launchpadDetails.tokenSymbol = launchpadDetails.tokenSymbol.toUpperCase();
 
@@ -165,9 +160,6 @@ export async function createSale(
     tokenName: launchpadDetails.tokenName,
     symbol: launchpadDetails.tokenSymbol,
     description: launchpadDetails.tokenDescription,
-    websiteUrl: launchpadDetails.websiteUrl ? launchpadDetails.websiteUrl : "",
-    telegramUrl: launchpadDetails.telegramUrl ? launchpadDetails.telegramUrl : "",
-    twitterUrl: launchpadDetails.twitterUrl ? launchpadDetails.twitterUrl : "",
     initialBuyQuantity: launchpadDetails.preBuyQuantity.toFixed(),
     vaultAddress: vaultAddress,
     creatorAddress: ctx.callingUser,
