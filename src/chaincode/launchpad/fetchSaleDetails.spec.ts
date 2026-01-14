@@ -63,6 +63,25 @@ describe("fetchSaleDetails", () => {
     expect(response.Data?.sellingToken).toEqual(launchpadGalaInstance.instanceKeyObj());
   });
 
+  it("should include timeUntilLaunch when saleStartTime is set", async () => {
+    // Given
+    sale.saleStartTime = Math.floor(Date.now() / 1000) + 60;
+    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1).savedState(sale);
+
+    const fetchSaleDto = new FetchSaleDto(vaultAddress);
+    fetchSaleDto.uniqueKey = randomUniqueKey();
+
+    const signedDto = fetchSaleDto.signed(users.testUser1.privateKey);
+
+    // When
+    const response = await contract.FetchSaleDetails(ctx, signedDto);
+
+    // Then
+    const expected = Math.max(0, (sale.saleStartTime - ctx.txUnixTime) * 1000);
+    expect(response.Status).toBe(1);
+    expect(response.Data?.timeUntilLaunch).toBe(expected);
+  });
+
   it("should handle sale with existing trades", async () => {
     // Given
     sale.buyToken(new BigNumber("100"), new BigNumber("0.01"));

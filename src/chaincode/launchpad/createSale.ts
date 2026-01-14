@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ConflictError, TokenInstanceKey, asValidUserAlias } from "@gala-chain/api";
+import { ConflictError, TokenInstanceKey, ValidationFailedError, asValidUserAlias } from "@gala-chain/api";
 import {
   GalaChainContext,
   createTokenClass,
@@ -62,6 +62,10 @@ export async function createSale(
   // Validate input parameters
 
   launchpadDetails.tokenSymbol = launchpadDetails.tokenSymbol.toUpperCase();
+
+  if (launchpadDetails.saleStartTime !== undefined && launchpadDetails.saleStartTime < ctx.txUnixTime) {
+    throw new ValidationFailedError("Sale start time must be in the future.");
+  }
 
   // Define the token class key
   const tokenInstanceKey = new TokenInstanceKey();
