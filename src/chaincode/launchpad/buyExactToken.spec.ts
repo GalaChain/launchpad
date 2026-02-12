@@ -32,6 +32,7 @@ import {
   LaunchpadFeeConfig,
   LaunchpadSale,
   NativeTokenQuantityDto,
+  SaleStatus,
   TradeResDto
 } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
@@ -60,7 +61,7 @@ describe("buyWithNative", () => {
 
     launchpadGalaClass = plainToInstance(TokenClass, {
       ...launchpadgala.tokenClassPlain(),
-      decimals: 8
+      decimals: LaunchpadSale.NATIVE_TOKEN_DECIMALS
     });
 
     vaultAddress = asValidUserAlias(`service|${launchpadGalaClassKey.toStringKey()}$launchpad`);
@@ -303,5 +304,237 @@ describe("buyWithNative", () => {
         )
       )
     );
+  });
+
+  test("Full sale purchase yields expected totals for 10 Million token sale", async () => {
+    // Given
+    salelaunchpadGalaBalance = plainToInstance(TokenBalance, {
+      ...launchpadgala.tokenBalance(),
+      owner: vaultAddress,
+      quantity: new BigNumber("0")
+    });
+
+    saleCurrencyBalance = plainToInstance(TokenBalance, {
+      ...currency.tokenBalance(),
+      owner: vaultAddress,
+      quantity: new BigNumber("2e+7")
+    });
+
+    userlaunchpadGalaBalance = plainToInstance(TokenBalance, {
+      ...launchpadgala.tokenBalance(),
+      owner: users.testUser1.identityKey,
+      quantity: new BigNumber("100000000")
+    });
+
+    userCurrencyBalance = plainToInstance(TokenBalance, {
+      ...currency.tokenBalance(),
+      owner: users.testUser1.identityKey,
+      quantity: new BigNumber("0")
+    });
+
+    const launchpadConfig = new LaunchpadFeeConfig(users.testUser2.identityKey, Number("0.001"), [
+      users.testUser2.identityKey
+    ]);
+
+    const userStartingGalaQuantity = userlaunchpadGalaBalance.getQuantityTotal();
+
+    const { ctx, contract, getWrites } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadConfig,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    // When
+    for (let i = 0; i < 50; i++) {
+      const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("200000"));
+
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.testUser1.privateKey);
+
+      const buyTokenRes = await contract.BuyExactToken(ctx, dto);
+
+      expect(buyTokenRes).toEqual(transactionSuccess());
+    }
+
+    // Then
+    const saleKey = sale.getCompositeKey();
+    const userGalaBalanceKey = userlaunchpadGalaBalance.getCompositeKey();
+    const userMemeBalanceKey = userCurrencyBalance.getCompositeKey();
+
+    const writes = getWrites();
+
+    const finalSaleData = JSON.parse(writes[saleKey]);
+    const finalUserGalaBalanceData = JSON.parse(writes[userGalaBalanceKey]);
+    const finalUserMemeBalanceData = JSON.parse(writes[userMemeBalanceKey]);
+
+    expect(finalSaleData).toEqual(
+      expect.objectContaining({
+        saleStatus: SaleStatus.END
+      })
+    );
+
+    const finalUserGalaQuantity = new BigNumber(finalUserGalaBalanceData.quantity);
+    const finalUserMemeQuantity = new BigNumber(finalUserMemeBalanceData.quantity);
+
+    // user bought full sale quantity of ten million
+    expect(finalUserMemeQuantity).toEqual(new BigNumber("10000000"));
+    expect(userStartingGalaQuantity.minus(finalUserGalaQuantity)).toEqual(new BigNumber("1560577.53780865"));
+  });
+
+  test("Adjustable supply: single transaction", async () => {
+    // Given
+    const multiplier = 100;
+
+    sale = new LaunchpadSale(
+      vaultAddress,
+      currencyInstance.instanceKeyObj(),
+      undefined,
+      users.testUser1.identityKey,
+      undefined,
+      multiplier
+    );
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("500").times(multiplier));
+
+    dto.uniqueKey = randomUniqueKey();
+    dto.sign(users.testUser1.privateKey);
+
+    const expectedResponse = plainToInstance(TradeResDto, {
+      inputQuantity: "0.00825575",
+      totalFees: "0",
+      totalTokenSold: new BigNumber("500").times(multiplier).toString(),
+      outputQuantity: new BigNumber("500").times(multiplier).toString(),
+      tokenName: "AUTOMATEDTESTCOIN",
+      tradeType: "Buy",
+      uniqueKey: dto.uniqueKey,
+      vaultAddress: "service|GALA$Unit$none$none$launchpad",
+      userAddress: "client|testUser1",
+      isFinalized: false,
+      functionName: "BuyExactToken"
+    });
+
+    // When
+    const buyTokenRes = await contract.BuyExactToken(ctx, dto);
+
+    // Then
+    expect(buyTokenRes).toEqual(transactionSuccess(expectedResponse));
+  });
+
+  test("Adjustable supply: Full sale purchase yields expected totals for 1 billion token sale", async () => {
+    // Given
+    const multiplier = 100;
+
+    sale = new LaunchpadSale(
+      vaultAddress,
+      currencyInstance.instanceKeyObj(),
+      undefined,
+      users.testUser1.identityKey,
+      undefined,
+      multiplier
+    );
+
+    salelaunchpadGalaBalance = plainToInstance(TokenBalance, {
+      ...launchpadgala.tokenBalance(),
+      owner: vaultAddress,
+      quantity: new BigNumber("0")
+    });
+
+    saleCurrencyBalance = plainToInstance(TokenBalance, {
+      ...currency.tokenBalance(),
+      owner: vaultAddress,
+      quantity: new BigNumber("2e+7").times(multiplier)
+    });
+
+    userlaunchpadGalaBalance = plainToInstance(TokenBalance, {
+      ...launchpadgala.tokenBalance(),
+      owner: users.testUser1.identityKey,
+      quantity: new BigNumber("100000000")
+    });
+
+    userCurrencyBalance = plainToInstance(TokenBalance, {
+      ...currency.tokenBalance(),
+      owner: users.testUser1.identityKey,
+      quantity: new BigNumber("0")
+    });
+
+    const launchpadConfig = new LaunchpadFeeConfig(users.testUser2.identityKey, Number("0.001"), [
+      users.testUser2.identityKey
+    ]);
+
+    const userStartingGalaQuantity = userlaunchpadGalaBalance.getQuantityTotal();
+
+    const { ctx, contract, getWrites } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadConfig,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    // When
+    for (let i = 0; i < 50; i++) {
+      const dto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("200000").times(multiplier));
+
+      dto.uniqueKey = randomUniqueKey();
+      dto.sign(users.testUser1.privateKey);
+
+      const buyTokenRes = await contract.BuyExactToken(ctx, dto);
+
+      expect(buyTokenRes).toEqual(transactionSuccess());
+    }
+
+    // Then
+    const saleKey = sale.getCompositeKey();
+    const userGalaBalanceKey = userlaunchpadGalaBalance.getCompositeKey();
+    const userMemeBalanceKey = userCurrencyBalance.getCompositeKey();
+
+    const writes = getWrites();
+
+    const finalSaleData = JSON.parse(writes[saleKey]);
+    const finalUserGalaBalanceData = JSON.parse(writes[userGalaBalanceKey]);
+    const finalUserMemeBalanceData = JSON.parse(writes[userMemeBalanceKey]);
+
+    expect(finalSaleData).toEqual(
+      expect.objectContaining({
+        saleStatus: SaleStatus.END
+      })
+    );
+
+    const finalUserGalaQuantity = new BigNumber(finalUserGalaBalanceData.quantity);
+    const finalUserMemeQuantity = new BigNumber(finalUserMemeBalanceData.quantity);
+
+    // user bought full sale quantity of ten million
+    expect(finalUserMemeQuantity).toEqual(new BigNumber("10000000").times(multiplier));
+    expect(userStartingGalaQuantity.minus(finalUserGalaQuantity)).toEqual(new BigNumber("1560577.53780865"));
   });
 });

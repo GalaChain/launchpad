@@ -23,8 +23,13 @@ import {
 } from "@gala-chain/chaincode";
 import BigNumber from "bignumber.js";
 
-import { CreateSaleResDto, CreateTokenSaleDTO, LaunchpadSale, NativeTokenQuantityDto } from "../../api/types";
-import { PreConditionFailedError } from "../../api/utils/error";
+import {
+  CreateSaleResDto,
+  CreateTokenSaleDTO,
+  LaunchpadSale,
+  NativeTokenQuantityDto,
+  SaleStatus
+} from "../../api/types";
 import { buyWithNative } from "./buyWithNative";
 
 /**
@@ -56,10 +61,6 @@ export async function createSale(
   let isSaleFinalized = false;
   // Validate input parameters
 
-  if (!launchpadDetails.websiteUrl && !launchpadDetails.telegramUrl && !launchpadDetails.twitterUrl) {
-    throw new PreConditionFailedError("Token sale creation requires atleast one social link.");
-  }
-
   launchpadDetails.tokenSymbol = launchpadDetails.tokenSymbol.toUpperCase();
 
   // Define the token class key
@@ -80,6 +81,8 @@ export async function createSale(
     throw new ConflictError("This token and a sale associated with it already exists");
   }
 
+  const supplyCapMultiplier = launchpadDetails.adjustableSupplyMultiplier ?? 1;
+
   // Call createTokenClass
   await createTokenClass(ctx, {
     network: "GC",
@@ -90,8 +93,8 @@ export async function createSale(
     symbol: launchpadDetails.tokenSymbol,
     description: launchpadDetails.tokenDescription,
     image: launchpadDetails.tokenImage,
-    maxSupply: new BigNumber("2e+7"),
-    maxCapacity: new BigNumber("2e+7"),
+    maxSupply: new BigNumber("2e+7").times(supplyCapMultiplier),
+    maxCapacity: new BigNumber("2e+7").times(supplyCapMultiplier),
     totalMintAllowance: new BigNumber(0),
     totalSupply: new BigNumber(0),
     totalBurned: new BigNumber(0),
@@ -103,12 +106,13 @@ export async function createSale(
     tokenClassKey: tokenInstanceKey.getTokenClassKey(),
     tokenInstance: new BigNumber(0),
     owner: vaultAddress,
-    quantity: new BigNumber("2e+7")
+    quantity: new BigNumber("2e+7").times(supplyCapMultiplier)
   });
 
-  //Update token class to remove the calling user as an authority in the token class
+  // Update token class to remove the calling user as an authority in the token class
   await updateTokenClass(ctx, {
     tokenClass: tokenInstanceKey.getTokenClassKey(),
+    overwriteAuthorities: true,
     authorities: [vaultAddress]
   });
 
@@ -117,7 +121,9 @@ export async function createSale(
     vaultAddress,
     tokenInstanceKey,
     launchpadDetails.reverseBondingCurveConfiguration?.toChainObject(),
-    ctx.callingUser
+    ctx.callingUser,
+    undefined,
+    launchpadDetails.adjustableSupplyMultiplier
   );
 
   await putChainObject(ctx, launchpad);
@@ -131,15 +137,29 @@ export async function createSale(
     isSaleFinalized = tradeStatus.isFinalized;
   }
 
+  // handling the optional saleStartTime after the preBuyQuantity allows
+  // creators to still optionally specify a pre-buy even when a
+  // sale is marked Upcoming / Coming Soon.
+  // Otherwise `buyWithNative` would throw an error when validating the sale is active.
+  if (launchpadDetails.saleStartTime !== undefined) {
+    launchpad.saleStartTime = launchpadDetails.saleStartTime;
+
+    // handle edge case
+    // if a sale was immediately sold out with a pre-buy on creation,
+    // do not set the ended sale back to UPCOMING
+    if (launchpad.saleStatus !== SaleStatus.END) {
+      launchpad.saleStatus = SaleStatus.UPCOMING;
+    }
+
+    await putChainObject(ctx, launchpad);
+  }
+
   // Return the response object
   return {
     image: launchpadDetails.tokenImage,
     tokenName: launchpadDetails.tokenName,
     symbol: launchpadDetails.tokenSymbol,
     description: launchpadDetails.tokenDescription,
-    websiteUrl: launchpadDetails.websiteUrl ? launchpadDetails.websiteUrl : "",
-    telegramUrl: launchpadDetails.telegramUrl ? launchpadDetails.telegramUrl : "",
-    twitterUrl: launchpadDetails.twitterUrl ? launchpadDetails.twitterUrl : "",
     initialBuyQuantity: launchpadDetails.preBuyQuantity.toFixed(),
     vaultAddress: vaultAddress,
     creatorAddress: ctx.callingUser,

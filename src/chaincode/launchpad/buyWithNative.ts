@@ -59,10 +59,14 @@ export async function buyWithNative(
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
   // If native tokens required exceeds the market cap, the sale can be finalized
+  const supplyCap =
+    sale.adjustableSupplyMultiplier !== undefined
+      ? new BigNumber(LaunchpadSale.MARKET_CAP).times(sale.adjustableSupplyMultiplier).toString()
+      : LaunchpadSale.MARKET_CAP;
   if (
     buyTokenDTO.nativeTokenQuantity
       .plus(new BigNumber(sale.nativeTokenQuantity))
-      .isGreaterThanOrEqualTo(new BigNumber(LaunchpadSale.MARKET_CAP))
+      .isGreaterThanOrEqualTo(new BigNumber(supplyCap))
   ) {
     isSaleFinalized = true;
   }
