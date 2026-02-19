@@ -20,7 +20,9 @@ import { SlippageToleranceExceededError } from "../../api/utils/error";
 import { fetchAndValidateSale } from "../utils";
 import { callNativeTokenIn } from "./callNativeTokenIn";
 import { transferTransactionFees } from "./fees";
+import { fetchOrCreateLaunchpadTradeData } from "./fetchLaunchpadTradeData";
 import { finalizeSale } from "./finaliseSale";
+import { writeTradeData } from "./writeTradeData";
 
 /**
  * Executes the purchase of an exact amount of tokens in a token sale.
@@ -99,6 +101,13 @@ export async function buyExactToken(
   // Update the sale record with the purchased token details
   sale.buyToken(tokensToBuy, nativeTokensRequired);
   await putChainObject(ctx, sale);
+
+  const galaVolumeTraded = nativeTokensRequired.abs();
+
+  const tradeData = await writeTradeData(ctx, {
+    vaultAddress: sale.vaultAddress,
+    galaVolumeTraded: galaVolumeTraded
+  });
 
   // If the sale is finalized, create a V3 pool and add liquidity
   if (isSaleFinalized) {
