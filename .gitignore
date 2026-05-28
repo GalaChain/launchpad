@@ -11,3 +11,4 @@ logs
 # dependencies
 node_modules
 .env
+.npmrc
