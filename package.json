@@ -54,6 +54,10 @@
     "bignumber.js": "^9.1.2"
   },
   "overrides": {
-    "bignumber.js": "^9.1.2"
+    "bignumber.js": "^9.1.2",
+    "@gala-chain/dex": {
+      "@gala-chain/api": "$@gala-chain/api",
+      "@gala-chain/chaincode": "$@gala-chain/chaincode"
+    }
   }
 }
