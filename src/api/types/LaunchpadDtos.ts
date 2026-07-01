@@ -27,6 +27,7 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsBoolean,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -103,22 +104,20 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
   @BigNumberProperty()
   public preBuyQuantity: BigNumber;
 
-  @IsString()
   @IsOptional()
-  public websiteUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  public telegramUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  public twitterUrl?: string;
+  @IsInt()
+  public saleStartTime?: number;
 
   @IsOptional()
   @ValidateNested()
   @Type(() => ReverseBondingCurveConfigurationDto)
   public reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationDto;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(100)
+  @Max(100)
+  public adjustableSupplyMultiplier?: number;
 
   constructor(
     tokenName: string,
@@ -128,7 +127,9 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
     preBuyQuantity: BigNumber,
     tokenCollection: string,
     tokenCategory: string,
-    reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationDto
+    reverseBondingCurveConfiguration?: ReverseBondingCurveConfigurationDto,
+    saleStartTime?: number,
+    adjustableSupplyMultiplier?: number
   ) {
     super();
     this.tokenName = tokenName;
@@ -139,6 +140,14 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
     this.tokenCollection = tokenCollection;
     this.tokenCategory = tokenCategory;
     this.reverseBondingCurveConfiguration = reverseBondingCurveConfiguration;
+
+    if (saleStartTime !== undefined) {
+      this.saleStartTime = saleStartTime;
+    }
+
+    if (adjustableSupplyMultiplier !== undefined) {
+      this.adjustableSupplyMultiplier = adjustableSupplyMultiplier;
+    }
   }
 }
 
@@ -154,15 +163,6 @@ export class CreateSaleResDto {
 
   @IsNotEmpty()
   public description: string;
-
-  @IsOptional()
-  public websiteUrl?: string;
-
-  @IsOptional()
-  public telegramUrl?: string;
-
-  @IsOptional()
-  public twitterUrl?: string;
 
   @IsNotEmpty()
   public initialBuyQuantity: string;

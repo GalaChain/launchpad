@@ -29,15 +29,25 @@ function calculateNativeTokensRequired(
   tokensToBuy: Decimal,
   totalTokensSold: Decimal,
   sellingTokenDecimals: number,
-  nativeTokenDecimals: number
+  nativeTokenDecimals: number,
+  adjustableSupplyMultiplier?: number
 ): [string, string] {
-  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
-  const { exponentFactor, euler, decimals } = getBondingConstants();
+  const basePrice =
+    adjustableSupplyMultiplier && adjustableSupplyMultiplier > 0
+      ? new Decimal(LaunchpadSale.BASE_PRICE).dividedBy(adjustableSupplyMultiplier)
+      : new Decimal(LaunchpadSale.BASE_PRICE);
+
+  const { exponentFactor, euler, decimals } = getBondingConstants(adjustableSupplyMultiplier);
 
   // Round tokens first, then calculate native tokens based on that rounded amount
   const roundedTokensToBuy = tokensToBuy.toDecimalPlaces(sellingTokenDecimals, Decimal.ROUND_DOWN);
 
-  // Calculate native tokens required: price = (basePrice / exponentFactor) * (e^(exponentFactor * (totalTokensSold + tokensToBuy) / decimals) - e^(exponentFactor * totalTokensSold / decimals))
+  // Calculate native tokens required:
+  // price = (basePrice / exponentFactor) *
+  // (
+  //   e^(exponentFactor * (totalTokensSold + tokensToBuy) / decimals) -
+  //   e^(exponentFactor * totalTokensSold / decimals)
+  // )
   // Where:
   //   exponent1 = exponentFactor * (totalTokensSold + tokensToBuy) / decimals
   //   exponent2 = exponentFactor * totalTokensSold / decimals
@@ -81,13 +91,13 @@ export async function callNativeTokenIn(
   ctx: GalaChainContext,
   buyTokenDTO: ExactTokenQuantityDto
 ): Promise<TradeCalculationResDto> {
-  const sale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
+  const sale: LaunchpadSale = await fetchAndValidateSale(ctx, buyTokenDTO.vaultAddress);
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
   let tokensToBuy = new Decimal(buyTokenDTO.tokenQuantity.toString());
 
   // Adjust tokensToBuy if user is trying to buy more tokens than the total supply
-  if (tokensToBuy.add(totalTokensSold).greaterThan(new Decimal("1e+7"))) {
+  if (tokensToBuy.add(totalTokensSold).greaterThan(new Decimal(sale.maxSupply.toString()))) {
     tokensToBuy = new Decimal(sale.sellingTokenQuantity);
   }
 
@@ -99,7 +109,8 @@ export async function callNativeTokenIn(
     tokensToBuy,
     totalTokensSold,
     sellingTokenDecimals,
-    nativeTokenDecimals
+    nativeTokenDecimals,
+    sale.adjustableSupplyMultiplier
   );
 
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);

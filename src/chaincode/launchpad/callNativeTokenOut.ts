@@ -29,13 +29,18 @@ function calculateNativeTokensReceived(
   sale: LaunchpadSale,
   tokensToSellBn: BigNumber,
   sellingTokenDecimals: number,
-  nativeTokenDecimals: number
+  nativeTokenDecimals: number,
+  adjustableSupplyMultiplier?: number
 ): [string, string] {
   const totalTokensSold = new Decimal(sale.fetchTokensSold());
 
   let tokensToSell = new Decimal(tokensToSellBn.toString());
-  const basePrice = new Decimal(LaunchpadSale.BASE_PRICE);
-  const { exponentFactor, euler, decimals } = getBondingConstants();
+  const basePrice =
+    adjustableSupplyMultiplier && adjustableSupplyMultiplier > 0
+      ? new Decimal(LaunchpadSale.BASE_PRICE).dividedBy(adjustableSupplyMultiplier)
+      : new Decimal(LaunchpadSale.BASE_PRICE);
+
+  const { exponentFactor, euler, decimals } = getBondingConstants(adjustableSupplyMultiplier);
 
   let newTotalTokensSold = totalTokensSold.minus(tokensToSell);
 
@@ -88,7 +93,8 @@ export async function callNativeTokenOut(
     sale,
     sellTokenDTO.tokenQuantity,
     sellingTokenDecimals,
-    nativeTokenDecimals
+    nativeTokenDecimals,
+    sale.adjustableSupplyMultiplier
   );
   const launchpadFeeAddressConfiguration = await fetchLaunchpadFeeAddress(ctx);
 

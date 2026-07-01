@@ -58,7 +58,7 @@ export async function sellExactToken(
   const memeToken = sale.fetchSellingTokenInstanceKey();
 
   // Abort if the vault doesn't have enough native tokens to pay the user
-  if (new BigNumber(sellTokenDTO.tokenQuantity).isGreaterThan(nativeTokensLeftInVault)) {
+  if (nativeTokensPayout.isGreaterThan(nativeTokensLeftInVault)) {
     throw new ValidationFailedError("Not enough GALA in sale contract to carry out this operation.");
   }
 

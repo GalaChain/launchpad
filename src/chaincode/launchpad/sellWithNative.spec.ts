@@ -26,7 +26,7 @@ import { currency, fixture, transactionError, transactionSuccess, users } from "
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
 
-import { LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
+import { ExactTokenQuantityDto, LaunchpadSale, NativeTokenQuantityDto, TradeResDto } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import launchpadgala from "../test/launchpadgala";
 
@@ -285,5 +285,161 @@ describe("sellWithNative", () => {
     expect(response).toEqual(transactionSuccess());
 
     // todo: check writes map, verify vault balance
+  });
+
+  let galaPurchaseQtyDefaultSupply: BigNumber;
+  let memeSaleQtyDefaultSupply: BigNumber;
+
+  test("Adjustable supply: Single transaction yields expected value for default 10 Million supply", async () => {
+    // Given
+    const multiplier = undefined;
+    galaPurchaseQtyDefaultSupply = new BigNumber("0.00082579");
+    memeSaleQtyDefaultSupply = new BigNumber("49.999949130655");
+
+    sale = new LaunchpadSale(
+      vaultAddress,
+      currencyInstance.instanceKeyObj(),
+      undefined,
+      users.testUser1.identityKey,
+      undefined,
+      multiplier
+    );
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    const buyDto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("500"));
+
+    buyDto.uniqueKey = randomUniqueKey();
+    buyDto.sign(users.testUser1.privateKey);
+
+    const expectedBuyResponse = plainToInstance(TradeResDto, {
+      inputQuantity: "0.00825575",
+      totalFees: "0",
+      totalTokenSold: new BigNumber("500").toString(),
+      outputQuantity: new BigNumber("500").toString(),
+      tokenName: "AUTOMATEDTESTCOIN",
+      tradeType: "Buy",
+      uniqueKey: buyDto.uniqueKey,
+      vaultAddress: "service|GALA$Unit$none$none$launchpad",
+      userAddress: "client|testUser1",
+      isFinalized: false,
+      functionName: "BuyExactToken"
+    });
+
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, galaPurchaseQtyDefaultSupply);
+    sellDto.uniqueKey = randomUniqueKey();
+    const signedDto = sellDto.signed(users.testUser1.privateKey);
+
+    // When
+    const buyRes = await contract.BuyExactToken(ctx, buyDto);
+
+    const sellRes = await contract.SellWithNative(ctx, signedDto);
+
+    // Then
+    expect(buyRes).toEqual(transactionSuccess(expectedBuyResponse));
+
+    expect(sellRes).toEqual(
+      transactionSuccess(
+        expect.objectContaining({
+          outputQuantity: galaPurchaseQtyDefaultSupply.toString(),
+          // extra precision in set constant above accounts for loss of precision
+          // when increased by the multiplier below.
+          // here, we round to the token decimal places to match the internal logic
+          inputQuantity: memeSaleQtyDefaultSupply.decimalPlaces(10).toString()
+        })
+      )
+    );
+    galaPurchaseQtyDefaultSupply = new BigNumber(sellRes.Data?.outputQuantity ?? 0);
+  });
+
+  test("Adjustable supply: Single transaction yields expected quantity for 100x scaled 1 Billion supply", async () => {
+    // Given
+    const multiplier = 100;
+
+    // Same Gala purchase amount should buy 100x meme token output
+    const inputQty = new BigNumber(galaPurchaseQtyDefaultSupply);
+
+    sale = new LaunchpadSale(
+      vaultAddress,
+      currencyInstance.instanceKeyObj(),
+      undefined,
+      users.testUser1.identityKey,
+      undefined,
+      multiplier
+    );
+
+    const { ctx, contract } = fixture(LaunchpadContract)
+      .registeredUsers(users.testUser1)
+      .savedState(
+        currencyClass,
+        currencyInstance,
+        launchpadGalaClass,
+        launchpadGalaInstance,
+        sale,
+        salelaunchpadGalaBalance,
+        saleCurrencyBalance,
+        userlaunchpadGalaBalance,
+        userCurrencyBalance
+      );
+
+    const buyDto = new ExactTokenQuantityDto(vaultAddress, new BigNumber("500").times(multiplier));
+
+    buyDto.uniqueKey = randomUniqueKey();
+    buyDto.sign(users.testUser1.privateKey);
+
+    const expectedBuyResponse = plainToInstance(TradeResDto, {
+      inputQuantity: "0.00825575",
+      totalFees: "0",
+      totalTokenSold: new BigNumber("500").times(multiplier).toString(),
+      outputQuantity: new BigNumber("500").times(multiplier).toString(),
+      tokenName: "AUTOMATEDTESTCOIN",
+      tradeType: "Buy",
+      uniqueKey: buyDto.uniqueKey,
+      vaultAddress: "service|GALA$Unit$none$none$launchpad",
+      userAddress: "client|testUser1",
+      isFinalized: false,
+      functionName: "BuyExactToken"
+    });
+
+    const sellDto = new NativeTokenQuantityDto(vaultAddress, inputQty);
+    sellDto.uniqueKey = randomUniqueKey();
+    const signedDto = sellDto.signed(users.testUser1.privateKey);
+
+    // When
+    const buyRes = await contract.BuyExactToken(ctx, buyDto);
+
+    const sellRes = await contract.SellWithNative(ctx, signedDto);
+
+    // Then
+    expect(buyRes).toEqual(transactionSuccess(expectedBuyResponse));
+
+    expect(sellRes).toEqual(
+      transactionSuccess(
+        expect.objectContaining({
+          inputQuantity: memeSaleQtyDefaultSupply.times(multiplier).toString(),
+          outputQuantity: galaPurchaseQtyDefaultSupply.toString()
+        })
+      )
+    );
+
+    const galaPurchaseQty100xSupply = new BigNumber(sellRes.Data?.outputQuantity ?? -1);
+    const memeSaleQty100xSupply = new BigNumber(sellRes.Data?.inputQuantity ?? -1);
+
+    // Compared to the previous test where the Launchpad has the default 10 Million supply,
+    // We expect the Meme token Qty to scale 100x and the Gala Qty to remain the same
+    expect(galaPurchaseQtyDefaultSupply).toEqual(galaPurchaseQty100xSupply);
+    expect(memeSaleQtyDefaultSupply).toEqual(memeSaleQty100xSupply.dividedBy(multiplier));
   });
 });
