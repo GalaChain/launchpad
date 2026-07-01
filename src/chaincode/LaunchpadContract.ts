@@ -75,9 +75,7 @@ import { fetchLaunchpadFeeAmount } from "./launchpad/fetchLaunchpadFeeAmount";
 
 export class LaunchpadContract extends GalaContract {
   constructor() {
-    super("Launchpad", version, {
-      allowNonRegisteredUsers: true
-    });
+    super("Launchpad", version);
   }
 
   @Submit({
