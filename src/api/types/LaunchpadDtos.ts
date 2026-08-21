@@ -119,6 +119,38 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
   @Max(100)
   public adjustableSupplyMultiplier?: number;
 
+  @IsOptional()
+  @IsString()
+  public websiteUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public twitterUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public telegramUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public discordUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public facebookUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public instagramUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public redditUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public tiktokUrl?: string;
+
   constructor(
     tokenName: string,
     tokenSymbol: string,
@@ -228,6 +260,10 @@ export class ExactTokenQuantityDto extends SubmitCallDTO {
   @IsOptional()
   public extraFees?: TokenExtraFeesDto;
 
+  @IsOptional()
+  @IsString()
+  public signing?: string;
+
   constructor(vaultAddress: UserAlias, tokenQuantity: BigNumber = new BigNumber(0)) {
     super();
     this.vaultAddress = vaultAddress;
@@ -256,6 +292,10 @@ export class NativeTokenQuantityDto extends SubmitCallDTO {
   @IsOptional()
   @IsBoolean()
   public IsPreMint?: boolean;
+
+  @IsOptional()
+  @IsString()
+  public signing?: string;
 
   constructor(vaultAddress: UserAlias, nativeTokenQuantity: BigNumber = new BigNumber(0)) {
     super();
