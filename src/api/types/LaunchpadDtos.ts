@@ -260,10 +260,6 @@ export class ExactTokenQuantityDto extends SubmitCallDTO {
   @IsOptional()
   public extraFees?: TokenExtraFeesDto;
 
-  @IsOptional()
-  @IsString()
-  public signing?: string;
-
   constructor(vaultAddress: UserAlias, tokenQuantity: BigNumber = new BigNumber(0)) {
     super();
     this.vaultAddress = vaultAddress;
@@ -292,10 +288,6 @@ export class NativeTokenQuantityDto extends SubmitCallDTO {
   @IsOptional()
   @IsBoolean()
   public IsPreMint?: boolean;
-
-  @IsOptional()
-  @IsString()
-  public signing?: string;
 
   constructor(vaultAddress: UserAlias, nativeTokenQuantity: BigNumber = new BigNumber(0)) {
     super();
