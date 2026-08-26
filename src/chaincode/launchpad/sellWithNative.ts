@@ -27,6 +27,7 @@ import { SlippageToleranceExceededError } from "../../api/utils/error";
 import { fetchAndValidateSale } from "../utils";
 import { callMemeTokenIn } from "./callMemeTokenIn";
 import { payReverseBondingCurveFee, transferTransactionFees } from "./fees";
+import { writeTradeData } from "./writeTradeData";
 
 /**
  * Executes a sale of tokens using native tokens (e.g., GALA) in exchange for the specified token amount.
@@ -126,6 +127,13 @@ export async function sellWithNative(
   // Update internal sale tracking
   sale.sellToken(tokensToSell, nativeTokensPayout);
   await putChainObject(ctx, sale);
+
+  const galaVolumeTraded = nativeTokensPayout.abs();
+
+  const tradeData = await writeTradeData(ctx, {
+    vaultAddress: sale.vaultAddress,
+    galaVolumeTraded: galaVolumeTraded
+  });
 
   const token = await fetchTokenClass(ctx, sale.sellingToken);
   return {
