@@ -119,6 +119,38 @@ export class CreateTokenSaleDTO extends SubmitCallDTO {
   @Max(100)
   public adjustableSupplyMultiplier?: number;
 
+  @IsOptional()
+  @IsString()
+  public websiteUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public twitterUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public telegramUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public discordUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public facebookUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public instagramUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public redditUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  public tiktokUrl?: string;
+
   constructor(
     tokenName: string,
     tokenSymbol: string,

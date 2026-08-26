@@ -267,7 +267,12 @@ describe("buyWithNative", () => {
 
   it("should return inverse native tokens when buying and selling tokens", async () => {
     //Given
-    salelaunchpadGalaBalance.subtractQuantity(new BigNumber("1e+7"), 0);
+    salelaunchpadGalaBalance.subtractQuantity(
+      new BigNumber("1e+7"),
+      0,
+      undefined,
+      asValidUserAlias(users.testUser1.identityKey)
+    );
     saleCurrencyBalance.addQuantity(new BigNumber("1e+7"));
     userlaunchpadGalaBalance.addQuantity(new BigNumber("1e+7"));
     const { ctx, contract } = fixture(LaunchpadContract)
