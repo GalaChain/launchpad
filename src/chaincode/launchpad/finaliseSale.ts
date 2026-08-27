@@ -51,9 +51,13 @@ export async function finalizeSale(ctx: GalaChainContext, sale: LaunchpadSale): 
     throw new PreConditionFailedError("Platform fee configuration is yet to be defined.");
   }
 
-  const platformFeePercentage = feeAllocation ? feeAllocation.platformFeePercentage : 0.01;
-  const ownerAllocationPercentage = feeAllocation ? feeAllocation.ownerAllocationPercentage : 0.05;
-  const liquidityAllocationPercentage = feeAllocation ? feeAllocation.liquidityAllocationPercentage : 0.94;
+  const platformFeePercentage = feeAllocation?.platformFeePercentage;
+  const ownerAllocationPercentage = feeAllocation?.ownerAllocationPercentage;
+  const liquidityAllocationPercentage = feeAllocation?.liquidityAllocationPercentage;
+
+  if (!platformFeePercentage || !ownerAllocationPercentage || !liquidityAllocationPercentage) {
+    throw new PreConditionFailedError("Fee allocation percentages are not properly configured.");
+  }
 
   const nativeToken = sale.fetchNativeTokenInstanceKey();
   const memeToken = sale.fetchSellingTokenInstanceKey();
