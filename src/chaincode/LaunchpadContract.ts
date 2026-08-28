@@ -53,6 +53,7 @@ import {
   sellWithNativeFeeGate
 } from "./dexLaunchpadFeeGate";
 import {
+  LPP_BATCH_SUBMITTER_ROLE,
   authorizeLaunchpadBatchSubmitter,
   buyExactToken,
   buyWithNative,
@@ -237,13 +238,15 @@ export class LaunchpadContract extends GalaContract {
     verifySignature: true
   })
   public async BatchSubmit(ctx: GalaChainContext, batchDto: BatchDto): Promise<GalaChainResponse<unknown>[]> {
-    // Check if the calling user is authorized to submit batches
-    const batchAuthorities = await fetchLaunchpadBatchSubmitAuthorities(ctx);
-    if (!batchAuthorities.isAuthorized(ctx.callingUser)) {
-      throw new UnauthorizedError(
-        `CallingUser ${ctx.callingUser} is not authorized to submit batches. ` +
-          `Authorized users: ${batchAuthorities.getAuthorities().join(", ")}`
-      );
+    // Authority list and LPP_BATCH_SUBMITTER are alternative grants.
+    if (!ctx.callingUserRoles.includes(LPP_BATCH_SUBMITTER_ROLE)) {
+      const batchAuthorities = await fetchLaunchpadBatchSubmitAuthorities(ctx);
+      if (!batchAuthorities.isAuthorized(ctx.callingUser)) {
+        throw new UnauthorizedError(
+          `CallingUser ${ctx.callingUser} is not authorized to submit batches. ` +
+            `Authorized users: ${batchAuthorities.getAuthorities().join(", ")}`
+        );
+      }
     }
 
     const responses: GalaChainResponse<unknown>[] = [];

@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { randomUniqueKey } from "@gala-chain/api";
-import { fixture, transactionSuccess, users } from "@gala-chain/test";
+import { BatchDto, BatchOperationDto, randomUniqueKey } from "@gala-chain/api";
+import { fixture, transactionErrorKey, transactionSuccess, users } from "@gala-chain/test";
 import { plainToInstance } from "class-transformer";
 
 import {
@@ -25,11 +25,23 @@ import {
 } from "../../api/types";
 import { LaunchpadContract } from "../LaunchpadContract";
 import {
+  LPP_BATCH_SUBMITTER_ROLE,
   authorizeLaunchpadBatchSubmitter,
   deauthorizeLaunchpadBatchSubmitter,
   fetchLaunchpadBatchSubmitAuthorities,
   getLaunchpadBatchSubmitAuthorities
 } from "./launchpadBatchSubmitAuthorizations";
+
+function signedBatchDto(user: { privateKey: string }): BatchDto {
+  const op = new BatchOperationDto();
+  op.method = "GetBatchSubmitAuthorities";
+  op.dto = {};
+  const dto = new BatchDto();
+  dto.operations = [op];
+  dto.uniqueKey = randomUniqueKey();
+  dto.sign(user.privateKey);
+  return dto;
+}
 
 describe("BatchSubmitAuthorizations", () => {
   describe("BatchSubmitAuthorities chain object", () => {
@@ -262,6 +274,47 @@ describe("BatchSubmitAuthorizations", () => {
 
       // Then
       expect(result).toEqual(transactionSuccess(expectedResponse));
+    });
+  });
+
+  describe("BatchSubmit contract method", () => {
+    it("should allow an authority-list user", async () => {
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([users.testUser1.identityKey]);
+
+      const { ctx, contract } = fixture(LaunchpadContract)
+        .registeredUsers(users.testUser1)
+        .savedState(existingAuth);
+
+      const result = await contract.BatchSubmit(ctx, signedBatchDto(users.testUser1));
+
+      expect(result).toEqual(transactionSuccess());
+    });
+
+    it("should allow a user with LPP_BATCH_SUBMITTER even if they are not on the list", async () => {
+      const roleUser = users.random("client|lppBatchSubmitter", [
+        "EVALUATE",
+        "SUBMIT",
+        LPP_BATCH_SUBMITTER_ROLE
+      ]);
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([users.testUser1.identityKey]);
+
+      const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(roleUser).savedState(existingAuth);
+
+      const result = await contract.BatchSubmit(ctx, signedBatchDto(roleUser));
+
+      expect(result).toEqual(transactionSuccess());
+    });
+
+    it("should reject a user with neither the role nor list membership", async () => {
+      const existingAuth = new LaunchpadBatchSubmitAuthorities([users.testUser1.identityKey]);
+
+      const { ctx, contract } = fixture(LaunchpadContract)
+        .registeredUsers(users.testUser2)
+        .savedState(existingAuth);
+
+      const result = await contract.BatchSubmit(ctx, signedBatchDto(users.testUser2));
+
+      expect(result).toEqual(transactionErrorKey("UNAUTHORIZED"));
     });
   });
 });

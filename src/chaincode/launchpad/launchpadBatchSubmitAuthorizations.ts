@@ -96,10 +96,17 @@ export async function getLaunchpadBatchSubmitAuthorities(
   return result;
 }
 
+export const LPP_BATCH_SUBMITTER_ROLE = "LPP_BATCH_SUBMITTER";
+
 /**
  * Checks if the calling user is authorized to perform batch submit operations.
+ * Authorized if they hold LPP_BATCH_SUBMITTER, or they are on the authority list.
  */
 export async function isAuthorizedForLaunchpadBatchSubmit(ctx: GalaChainContext): Promise<boolean> {
+  if (ctx.callingUserRoles.includes(LPP_BATCH_SUBMITTER_ROLE)) {
+    return true;
+  }
+
   const authorities = await fetchLaunchpadBatchSubmitAuthorities(ctx);
   return authorities.isAuthorized(ctx.callingUser);
 }
