@@ -12,7 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { TokenBalance, TokenClass, TokenInstance, randomUniqueKey } from "@gala-chain/api";
+import {
+  GalaChainResponse,
+  TokenBalance,
+  TokenClass,
+  TokenInstance,
+  ValidationFailedError,
+  randomUniqueKey
+} from "@gala-chain/api";
 import { fixture, users } from "@gala-chain/test";
 import BigNumber from "bignumber.js";
 import { plainToInstance } from "class-transformer";
@@ -169,5 +176,33 @@ describe("createSale", () => {
     // Then
     expect(response.Status).toBe(1);
     expect(response.Data?.image).toBe("https://cdn.example.com/token-logo.png");
+  });
+
+  it("should reject sale start time in the past", async () => {
+    // Given
+    const { ctx, contract } = fixture(LaunchpadContract).registeredUsers(users.testUser1);
+
+    const createSaleDto = new CreateTokenSaleDTO(
+      "Past Start Token",
+      "PAST",
+      "A token with past sale start time",
+      "https://example.com/past.png",
+      new BigNumber(0),
+      "PastCollection",
+      "PastCategory",
+      undefined,
+      ctx.txUnixTime - 1
+    );
+    createSaleDto.uniqueKey = randomUniqueKey();
+
+    const signedDto = createSaleDto.signed(users.testUser1.privateKey);
+
+    // When
+    const response = await contract.CreateSale(ctx, signedDto);
+
+    // Then
+    expect(response).toEqual(
+      GalaChainResponse.Error(new ValidationFailedError("Sale start time must be in the future."))
+    );
   });
 });

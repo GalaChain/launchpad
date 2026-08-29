@@ -44,5 +44,9 @@ export async function fetchSaleDetails(
     throw new NotFoundError("Sale record not found.");
   }
 
+  const saleStartTime = sale.saleStartTime ?? 0;
+  const remainingSeconds = saleStartTime > 0 ? saleStartTime - ctx.txUnixTime : 0;
+  sale.timeUntilLaunch = Math.max(0, remainingSeconds) * 1000;
+
   return sale;
 }

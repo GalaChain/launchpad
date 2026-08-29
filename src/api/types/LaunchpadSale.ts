@@ -63,6 +63,11 @@ export class LaunchpadSale extends ChainObject {
   @IsInt()
   public saleStartTime?: number;
 
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  public timeUntilLaunch?: number;
+
   @IsNotEmpty()
   @ValidateNested()
   @Type(() => TokenInstanceKey)
